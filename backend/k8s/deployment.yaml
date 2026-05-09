@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kigali-parking-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kigali-parking
+  template:
+    metadata:
+      labels:
+        app: kigali-parking
+    spec:
+      containers:
+        - name: backend
+          image: <your-registry>/kigali-parking-backend:latest
+          env:
+            - name: DB_URL
+              value: "${DB_URL}"
+            - name: DB_USERNAME
+              value: "${DB_USERNAME}"
+            - name: DB_PASSWORD
+              value: "${DB_PASSWORD}"
