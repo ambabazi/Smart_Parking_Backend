@@ -17,3 +17,9 @@ app:
   flutterwave:
     key: ${FLUTTERWAVE_KEY:}
     secret: ${FLUTTERWAVE_SECRET:}
+
+server:
+  tomcat:
+    accesslog:
+      enabled: true
+      pattern: "%h %l %u %t \"%r\" %s %b"
