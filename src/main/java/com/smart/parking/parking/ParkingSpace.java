@@ -12,4 +12,5 @@ public class ParkingSpace {
 
     private String name;
     private int availableSlots;
+    private java.math.BigDecimal pricePerHour;
 }
