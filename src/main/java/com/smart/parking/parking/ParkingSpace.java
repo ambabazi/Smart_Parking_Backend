@@ -1,5 +1,6 @@
 package com.smart.parking.parking;
 
+import com.smart.parking.event.Event;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
