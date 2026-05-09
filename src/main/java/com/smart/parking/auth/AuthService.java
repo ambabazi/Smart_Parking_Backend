@@ -25,7 +25,7 @@ public class AuthService {
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? Role.valueOf(request.getRole()) : Role.DRIVER)
+                .role(request.getRole() != null ? request.getRole() : Role.DRIVER)
                 .plateNumber(request.getPlateNumber())
                 .build();
 
