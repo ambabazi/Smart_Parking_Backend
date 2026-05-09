@@ -1,6 +1,6 @@
 package com.smart.parking.auth;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class User {

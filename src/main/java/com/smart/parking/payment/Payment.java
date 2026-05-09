@@ -1,6 +1,6 @@
 package com.smart.parking.payment;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class Payment {
