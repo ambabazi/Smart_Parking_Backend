@@ -1,12 +1,6 @@
-# Env
 .env
 .env.local
-
-# Maven
 /target
-
-# IDE
 *.iml
 .idea/
 .vscode/
-
