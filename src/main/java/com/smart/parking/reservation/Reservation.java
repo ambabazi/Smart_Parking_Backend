@@ -1,6 +1,6 @@
 package com.smart.parking.reservation;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class Reservation {
