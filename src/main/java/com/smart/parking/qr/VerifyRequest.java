@@ -1,5 +1,8 @@
 package com.smart.parking.qr;
 
+import lombok.Data;
+
+@Data
 public class VerifyRequest {
-    public String code;
+    private String token; // The UUID scanned from the QR code
 }

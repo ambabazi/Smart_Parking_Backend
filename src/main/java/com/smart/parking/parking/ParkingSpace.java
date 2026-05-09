@@ -1,11 +1,15 @@
 package com.smart.parking.parking;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
+@Data
 public class ParkingSpace {
     @Id
     @GeneratedValue
-    Long id;
-    public String name;
+    private Long id;
+
+    private String name;
+    private int availableSlots;
 }
