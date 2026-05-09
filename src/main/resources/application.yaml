@@ -23,3 +23,9 @@ server:
     accesslog:
       enabled: true
       pattern: "%h %l %u %t \"%r\" %s %b"
+
+logging:
+  level:
+    org.apache.catalina: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
