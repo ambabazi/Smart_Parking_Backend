@@ -1,6 +1,9 @@
 package com.smart.parking.auth;
 
+import lombok.Data;
+
+@Data
 public class LoginRequest {
-    public String username;
-    public String password;
+    private String email;
+    private String password;
 }
