@@ -6,8 +6,10 @@ import com.smart.parking.parking.ParkingSpaceRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -21,7 +23,7 @@ public class ReservationService {
     private final ParkingSpaceRepository spaceRepo;
     private final ReservationRepository  reservationRepo;
     private final UserRepository userRepo;
-    //private final SimpMessagingTemplate   webSocket;   // injected after BE2-04
+    private final SimpMessagingTemplate webSocket;   // injected after BE2-04
 
     // ─── @Transactional wraps the ENTIRE method in one DB transaction ───
     // If anything throws, ALL changes are rolled back automatically.
@@ -29,6 +31,7 @@ public class ReservationService {
     // the reservation would leave the DB in a broken state.
     @Transactional
     public ReservationResponse createReservation(BookingRequest req, Long userId) {
+
 
         // Step 1 — fetch the space WITH a pessimistic write lock.
         // This means: "lock this DB row so no other thread can read
@@ -76,11 +79,14 @@ public class ReservationService {
         // Every browser subscribed to /topic/slot-update receives this.
         // FE1 uses it to re-colour the map marker in real time.
         // (webSocket is null until BE2-04 — comment this out for now)
-        //webSocket.convertAndSend("/topic/slot-update",
-        //Map.of("parkingSpaceId", space.getId(),
-        //"availableSlots",  space.getAvailableSlots(),
-        //"licensePlate",  res.getLicensePlate()
-        //));
+        webSocket.convertAndSend("/topic/slot-update",
+                (Object) Map.of(
+                        "parkingSpaceId", space.getId(),
+                        "availableSlots",  space.getAvailableSlots(),
+                        "licensePlate",    res.getLicensePlate()
+                ));
+
+
 
         // Step 7 — return the response DTO
         return new ReservationResponse(
