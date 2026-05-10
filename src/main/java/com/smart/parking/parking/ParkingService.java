@@ -19,6 +19,19 @@ public class ParkingService {
                 .toList();
     }
 
+    // ── Add this method to your existing ParkingSpaceService ─────────
+// Serves GET /parking-spaces/event/{eventId}
+// Returns only the spaces activated for one specific event.
+// FE2 uses this to show "Find Event Parking" results.
+
+    public List<ParkingDTO> getSpacesByEvent(Long eventId) {
+        return spaceRepo
+                .findByCurrentEventId(eventId)   // already in repo from BE2-01
+                .stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     private ParkingDTO toDTO(ParkingSpace p) {
         return new ParkingDTO(
                 p.getId(),
