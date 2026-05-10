@@ -37,15 +37,17 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ping").permitAll()
+                        .requestMatchers("/ping/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/parking-spaces/nearby").permitAll()
                         .requestMatchers(HttpMethod.POST, "/payments/webhook").permitAll()
-                        .requestMatchers("/ws/**").permitAll() // Allow WebSockets
-                        // Swagger / OpenAPI
-                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/error", "/error/**").permitAll()  // Allow error page
+                        .requestMatchers("/v3/**").permitAll()  // Allow all /v3/* paths
+                        .requestMatchers("/swagger-ui**").permitAll()  // Allow swagger-ui
                         .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-resources/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -20,7 +20,7 @@ public class PaymentController {
     private final ReservationRepository reservationRepository;
     private final ObjectMapper objectMapper;
 
-    @Value("${flutterwave.secret.hash}")
+    @Value("${app.flutterwave.secret.hash:}")
     private String flutterwaveSecretHash; // Used to verify Flutterwave webhooks
 
     @PostMapping("/initiate/{reservationId}")

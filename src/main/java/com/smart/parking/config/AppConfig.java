@@ -1,6 +1,7 @@
 package com.smart.parking.config;
 
 import com.smart.parking.auth.UserRepository;
+import com.smart.parking.security.AppUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,16 +24,11 @@ public class AppConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        // We wrap our User entity in a Spring Security User object
         return username -> {
             com.smart.parking.auth.User user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            return org.springframework.security.core.userdetails.User.builder()
-                    .username(user.getEmail())
-                    .password(user.getPassword())
-                    .authorities(user.getRole().name())
-                    .build();
+            return new AppUserDetails(user);
         };
     }
 

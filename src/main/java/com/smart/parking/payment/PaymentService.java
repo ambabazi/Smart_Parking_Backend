@@ -22,7 +22,7 @@ public class PaymentService {
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
 
-    @Value("${flutterwave.secret.key}")
+    @Value("${app.flutterwave.secret.key:}")
     private String flwSecretKey;
 
     @Value("${app.frontend.url:http://localhost:3000}")
