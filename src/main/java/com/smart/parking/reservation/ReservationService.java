@@ -86,8 +86,6 @@ public class ReservationService {
                         "licensePlate",    res.getLicensePlate()
                 ));
 
-
-
         // Step 7 — return the response DTO
         return new ReservationResponse(
                 res.getId(),
