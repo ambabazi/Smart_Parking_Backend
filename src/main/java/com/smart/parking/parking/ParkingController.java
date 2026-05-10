@@ -2,10 +2,7 @@ package com.smart.parking.parking;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,5 +22,16 @@ public class ParkingController {
             @RequestParam(defaultValue = "2000") Double radius
     ) {
         return ResponseEntity.ok(parkingService.findNearby(lat, lng, radius));
+    }
+
+    // ── Add this endpoint to your existing ParkingSpaceController ────
+// GET /parking-spaces/event/1
+// @PathVariable extracts the {eventId} from the URL path
+
+    @GetMapping("/event/{eventId}")
+    public ResponseEntity<List<ParkingDTO>> getByEvent(
+            @PathVariable Long eventId
+    ) {
+        return ResponseEntity.ok(parkingService.getSpacesByEvent(eventId));
     }
 }
