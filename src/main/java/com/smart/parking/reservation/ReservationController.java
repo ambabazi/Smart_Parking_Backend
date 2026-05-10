@@ -14,7 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReservationController {
 
-    private final BookingService bookingService;
+    private final ReservationService ReservationService;
 
     // POST /reservations
     // @Valid triggers the @NotNull @Min @Max checks on BookingRequest
@@ -27,7 +27,7 @@ public class ReservationController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Long userId = ((AppUserDetails) userDetails).getId();
-        return bookingService.createReservation(req, userId);
+        return ReservationService.createReservation(req, userId);
     }
 
     // GET /reservations/my
@@ -37,6 +37,6 @@ public class ReservationController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         Long userId = ((AppUserDetails) userDetails).getId();
-        return bookingService.getMyReservations(userId);
+        return ReservationService.getMyReservations(userId);
     }
 }
