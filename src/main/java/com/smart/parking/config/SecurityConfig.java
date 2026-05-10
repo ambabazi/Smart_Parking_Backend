@@ -42,12 +42,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/parking-spaces/nearby").permitAll()
                         .requestMatchers(HttpMethod.POST, "/payments/webhook").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/error", "/error/**").permitAll()  // Allow error page
-                        .requestMatchers("/v3/**").permitAll()  // Allow all /v3/* paths
-                        .requestMatchers("/swagger-ui**").permitAll()  // Allow swagger-ui
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/swagger-resources/**").permitAll()
-                        .requestMatchers("/webjars/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
