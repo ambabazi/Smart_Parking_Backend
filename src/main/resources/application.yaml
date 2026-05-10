@@ -19,8 +19,13 @@ app:
     secret: ${JWT_SECRET:secret}
 
   flutterwave:
-    key: ${FLUTTERWAVE_KEY:}
-    secret: ${FLUTTERWAVE_SECRET:}
+    public:
+      key: ${FLUTTERWAVE_PUBLIC_KEY:}
+    secret:
+      key: ${FLUTTERWAVE_SECRET_KEY:}
+      hash: ${FLUTTERWAVE_SECRET_HASH:}
+    encryption:
+      key: ${FLUTTERWAVE_ENCRYPTION_KEY:}
 
 server:
   port: 8081
