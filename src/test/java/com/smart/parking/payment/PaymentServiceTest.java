@@ -44,11 +44,11 @@ class PaymentServiceTest {
     void setUp() {
         testUser = User.builder()
                 .id(1L)
-                .name("Test Driver")
+                .fullName("Test Driver")
                 .email("driver@example.com")
+                .phone("+250788123456")
                 .password("hashed")
                 .role(Role.DRIVER)
-                .plateNumber("RAB123")
                 .build();
 
         ParkingSpace parkingSpace = new ParkingSpace();

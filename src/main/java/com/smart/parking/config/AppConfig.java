@@ -1,6 +1,7 @@
 package com.smart.parking.config;
 
 import org.springframework.context.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.*;
 import org.springframework.web.filter.CorsFilter;
 
@@ -18,5 +19,10 @@ public class AppConfig {
             new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

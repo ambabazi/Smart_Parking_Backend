@@ -2,49 +2,33 @@ package com.smart.parking.security;
 
 import com.smart.parking.auth.Role;
 import com.smart.parking.auth.User;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@TestPropertySource(properties = "app.jwt.secret=test-secret-key-that-is-long-enough-for-testing-purposes")
 class JwtServiceTest {
 
     private JwtService jwtService;
-
     private User testUser;
-    private UserDetails testUserDetails;
 
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
-        // Use reflection to set the secret key
-        ReflectionTestUtils.setField(jwtService, "secretKey", "test-secret-key-that-is-long-enough-for-testing-purposes");
+        // Use reflection to set the secret and expiration
+        ReflectionTestUtils.setField(jwtService, "secret", "test-secret-key-that-is-long-enough-for-testing-purposes");
+        ReflectionTestUtils.setField(jwtService, "expirationMs", 86400000L);
 
         testUser = User.builder()
                 .id(1L)
-                .name("Test User")
+                .fullName("Test User")
                 .email("test@example.com")
+                .phone("+250788123456")
                 .password("hashedPassword")
                 .role(Role.DRIVER)
-                .plateNumber("ABC123")
                 .build();
-
-        testUserDetails = new AppUserDetails(testUser);
     }
 
     @Test
@@ -56,6 +40,8 @@ class JwtServiceTest {
         assertNotNull(token);
         assertFalse(token.isEmpty());
         assertTrue(token.contains("."));
+        // JWT has 3 parts separated by dots
+        assertEquals(3, token.split("\\.").length);
     }
 
     @Test
@@ -69,23 +55,15 @@ class JwtServiceTest {
     }
 
     @Test
-    void generateToken_ShouldIncludeRoleInClaims() {
-        // Act
+    void extractUsername_ShouldReturnEmailFromToken() {
+        // Arrange
         String token = jwtService.generateToken(testUser);
 
-        // Assert
-        String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
-        assertEquals("DRIVER", role);
-    }
-
-    @Test
-    void generateToken_ShouldIncludeUserIdInClaims() {
         // Act
-        String token = jwtService.generateToken(testUser);
+        String extracted = jwtService.extractUsername(token);
 
         // Assert
-        Long userId = jwtService.extractClaim(token, claims -> claims.get("userId", Long.class));
-        assertEquals(1L, userId);
+        assertEquals("test@example.com", extracted);
     }
 
     @Test
@@ -94,7 +72,7 @@ class JwtServiceTest {
         String token = jwtService.generateToken(testUser);
 
         // Act
-        boolean isValid = jwtService.isTokenValid(token, testUserDetails);
+        boolean isValid = jwtService.isTokenValid(token, testUser);
 
         // Assert
         assertTrue(isValid);
@@ -104,12 +82,14 @@ class JwtServiceTest {
     void isTokenValid_ShouldReturnFalse_ForTokenWithWrongUser() {
         // Arrange
         String token = jwtService.generateToken(testUser);
-        UserDetails differentUser = new AppUserDetails(User.builder()
+        User differentUser = User.builder()
                 .id(2L)
+                .fullName("Different User")
                 .email("different@example.com")
+                .phone("+250788654321")
                 .password("hashed")
                 .role(Role.DRIVER)
-                .build());
+                .build();
 
         // Act
         boolean isValid = jwtService.isTokenValid(token, differentUser);
@@ -119,26 +99,33 @@ class JwtServiceTest {
     }
 
     @Test
-    void extractUsername_ShouldReturnCorrectEmail() {
-        // Arrange
+    void isTokenValid_ShouldReturnFalse_ForExpiredToken() {
+        // Arrange - Create token with very short expiration
+        ReflectionTestUtils.setField(jwtService, "expirationMs", 1L);
         String token = jwtService.generateToken(testUser);
+        
+        try {
+            Thread.sleep(10); // Wait for token to expire
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         // Act
-        String username = jwtService.extractUsername(token);
+        boolean isValid = jwtService.isTokenValid(token, testUser);
 
         // Assert
-        assertEquals("test@example.com", username);
+        assertFalse(isValid);
     }
 
     @Test
-    void extractClaim_ShouldReturnClaimValue() {
+    void isTokenValid_ShouldReturnFalse_ForMalformedToken() {
         // Arrange
-        String token = jwtService.generateToken(testUser);
+        String malformedToken = "invalid.token.here";
 
         // Act
-        String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+        boolean isValid = jwtService.isTokenValid(malformedToken, testUser);
 
         // Assert
-        assertEquals("DRIVER", role);
+        assertFalse(isValid);
     }
 }

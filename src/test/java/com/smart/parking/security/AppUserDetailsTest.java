@@ -14,79 +14,76 @@ import static org.junit.jupiter.api.Assertions.*;
 class AppUserDetailsTest {
 
     private User testUser;
-    private AppUserDetails appUserDetails;
 
     @BeforeEach
     void setUp() {
         testUser = User.builder()
                 .id(1L)
-                .name("Test User")
+                .fullName("Test User")
                 .email("test@example.com")
+                .phone("+250788123456")
                 .password("hashed_password")
                 .role(Role.DRIVER)
-                .plateNumber("ABC123")
                 .build();
-
-        appUserDetails = new AppUserDetails(testUser);
     }
 
     @Test
     void constructor_ShouldStoreUserId() {
         // Assert
-        assertEquals(1L, appUserDetails.getId());
+        assertEquals(1L, testUser.getId());
     }
 
     @Test
     void constructor_ShouldStoreEmail() {
         // Assert
-        assertEquals("test@example.com", appUserDetails.getEmail());
+        assertEquals("test@example.com", testUser.getEmail());
     }
 
     @Test
     void constructor_ShouldStorePassword() {
         // Assert
-        assertEquals("hashed_password", appUserDetails.getPassword());
+        assertEquals("hashed_password", testUser.getPassword());
     }
 
     @Test
     void constructor_ShouldCreateAuthoritiesFromRole() {
         // Act
-        Collection<? extends GrantedAuthority> authorities = appUserDetails.getAuthorities();
+        Collection<? extends GrantedAuthority> authorities = testUser.getAuthorities();
 
         // Assert
         assertNotNull(authorities);
         assertEquals(1, authorities.size());
-        assertTrue(authorities.contains(new SimpleGrantedAuthority("DRIVER")));
+        assertTrue(authorities.stream().anyMatch(a -> a.getAuthority().equals("DRIVER")));
     }
 
     @Test
     void getId_ShouldReturnUserId() {
         // Assert
-        assertEquals(1L, appUserDetails.getId());
+        assertEquals(1L, testUser.getId());
     }
 
     @Test
     void getEmail_ShouldReturnUserEmail() {
         // Assert
-        assertEquals("test@example.com", appUserDetails.getEmail());
+        assertEquals("test@example.com", testUser.getEmail());
     }
 
     @Test
     void getPassword_ShouldReturnHashedPassword() {
         // Assert
-        assertEquals("hashed_password", appUserDetails.getPassword());
+        assertEquals("hashed_password", testUser.getPassword());
     }
 
     @Test
     void getUsername_ShouldReturnEmail() {
         // Assert
-        assertEquals("test@example.com", appUserDetails.getUsername());
+        assertEquals("test@example.com", testUser.getUsername());
     }
 
     @Test
     void getAuthorities_ShouldReturnRoleAsAuthority() {
         // Act
-        Collection<? extends GrantedAuthority> authorities = appUserDetails.getAuthorities();
+        Collection<? extends GrantedAuthority> authorities = testUser.getAuthorities();
 
         // Assert
         assertNotNull(authorities);
@@ -99,25 +96,25 @@ class AppUserDetailsTest {
     @Test
     void isAccountNonExpired_ShouldReturnTrue() {
         // Assert
-        assertTrue(appUserDetails.isAccountNonExpired());
+        assertTrue(testUser.isAccountNonExpired());
     }
 
     @Test
     void isAccountNonLocked_ShouldReturnTrue() {
         // Assert
-        assertTrue(appUserDetails.isAccountNonLocked());
+        assertTrue(testUser.isAccountNonLocked());
     }
 
     @Test
     void isCredentialsNonExpired_ShouldReturnTrue() {
         // Assert
-        assertTrue(appUserDetails.isCredentialsNonExpired());
+        assertTrue(testUser.isCredentialsNonExpired());
     }
 
     @Test
     void isEnabled_ShouldReturnTrue() {
         // Assert
-        assertTrue(appUserDetails.isEnabled());
+        assertTrue(testUser.isEnabled());
     }
 
     @Test
@@ -125,19 +122,17 @@ class AppUserDetailsTest {
         // Arrange
         User hostUser = User.builder()
                 .id(2L)
-                .name("Host User")
+                .fullName("Host User")
                 .email("host@example.com")
+                .phone("+250788123457")
                 .password("hashed")
                 .role(Role.HOST)
                 .build();
 
-        // Act
-        AppUserDetails hostDetails = new AppUserDetails(hostUser);
-
-        // Assert
-        assertEquals(2L, hostDetails.getId());
-        assertEquals("host@example.com", hostDetails.getEmail());
-        assertEquals(Role.HOST.name(), hostDetails.getAuthorities().stream()
+        // Act & Assert
+        assertEquals(2L, hostUser.getId());
+        assertEquals("host@example.com", hostUser.getEmail());
+        assertEquals("HOST", hostUser.getAuthorities().stream()
                 .findFirst()
                 .orElse(null)
                 .getAuthority());
@@ -148,18 +143,16 @@ class AppUserDetailsTest {
         // Arrange
         User adminUser = User.builder()
                 .id(3L)
-                .name("Admin User")
+                .fullName("Admin User")
                 .email("admin@example.com")
+                .phone("+250788123458")
                 .password("hashed")
                 .role(Role.ADMIN)
                 .build();
 
-        // Act
-        AppUserDetails adminDetails = new AppUserDetails(adminUser);
-
-        // Assert
-        assertEquals(3L, adminDetails.getId());
-        assertEquals(Role.ADMIN.name(), adminDetails.getAuthorities().stream()
+        // Act & Assert
+        assertEquals(3L, adminUser.getId());
+        assertEquals("ADMIN", adminUser.getAuthorities().stream()
                 .findFirst()
                 .orElse(null)
                 .getAuthority());
@@ -167,8 +160,8 @@ class AppUserDetailsTest {
 
     @Test
     void userDetailsContract_ShouldBeImplementedCorrectly() {
-        // Arrange - AppUserDetails should be castable to UserDetails
-        org.springframework.security.core.userdetails.UserDetails userDetails = appUserDetails;
+        // Arrange - User should implement UserDetails
+        org.springframework.security.core.userdetails.UserDetails userDetails = testUser;
 
         // Assert - All UserDetails methods should work
         assertNotNull(userDetails.getPassword());
@@ -181,9 +174,9 @@ class AppUserDetailsTest {
     }
 
     @Test
-    void getId_ShouldBeAccessibleViawithLombok() {
+    void getId_ShouldBeAccessibleViaLombok() {
         // Assert - Verify Lombok @Getter works
-        assertEquals(1L, appUserDetails.getId());
+        assertEquals(1L, testUser.getId());
     }
 
     @Test
@@ -191,22 +184,19 @@ class AppUserDetailsTest {
         // Arrange
         User complexUser = User.builder()
                 .id(100L)
-                .name("Complex User")
+                .fullName("Complex User")
                 .email("complex@example.com")
+                .phone("+250788999999")
                 .password("very_hashed_password")
                 .role(Role.DRIVER)
-                .plateNumber("XYZ789")
                 .build();
 
-        // Act
-        AppUserDetails details = new AppUserDetails(complexUser);
-
         // Assert
-        assertEquals(100L, details.getId());
-        assertEquals("complex@example.com", details.getEmail());
-        assertEquals("very_hashed_password", details.getPassword());
-        assertEquals("complex@example.com", details.getUsername());
-        assertEquals("DRIVER", details.getAuthorities().stream()
+        assertEquals(100L, complexUser.getId());
+        assertEquals("complex@example.com", complexUser.getEmail());
+        assertEquals("very_hashed_password", complexUser.getPassword());
+        assertEquals("complex@example.com", complexUser.getUsername());
+        assertEquals("DRIVER", complexUser.getAuthorities().stream()
                 .findFirst()
                 .orElse(null)
                 .getAuthority());

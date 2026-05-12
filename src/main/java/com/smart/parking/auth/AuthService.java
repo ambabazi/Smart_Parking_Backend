@@ -54,21 +54,22 @@ public class AuthService {
             authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                     req.getEmail(), req.getPassword()));
+            User user = userRepository.findByEmail(req.getEmail())
+                    .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+            String token = jwtService.generateToken(user);
+
+            return ResponseEntity.ok(ApiResponse.success("Login successful",
+                AuthResponse.builder()
+                    .token(token)
+                    .userId(user.getId())
+                    .fullName(user.getFullName())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build()));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error("Invalid email or password"));
         }
-
-        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
-        String token = jwtService.generateToken(user);
-
-        return ResponseEntity.ok(ApiResponse.success("Login successful",
-            AuthResponse.builder()
-                .token(token)
-                .userId(user.getId())
-                .fullName(user.getFullName())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build()));
     }
 }

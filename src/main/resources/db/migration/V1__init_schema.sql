@@ -11,6 +11,19 @@ CREATE TABLE IF NOT EXISTS users (
     created_at  TIMESTAMP           NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS events (
+    id              BIGSERIAL PRIMARY KEY,
+    name            VARCHAR(150)   NOT NULL,
+    venue           VARCHAR(255)   NOT NULL,
+    latitude        DECIMAL(10,8)  NOT NULL,
+    longitude       DECIMAL(11,8)  NOT NULL,
+    event_date      TIMESTAMP      NOT NULL,
+    radius_km       DECIMAL(5,2)   NOT NULL DEFAULT 1.0,
+    is_active       BOOLEAN        NOT NULL DEFAULT FALSE,
+    price_multiplier DECIMAL(4,2)  NOT NULL DEFAULT 2.0,
+    created_at      TIMESTAMP      NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS parking_spaces (
     id              BIGSERIAL PRIMARY KEY,
     host_id         BIGINT REFERENCES users(id),
@@ -20,9 +33,9 @@ CREATE TABLE IF NOT EXISTS parking_spaces (
     longitude       DECIMAL(11,8)  NOT NULL,
     total_slots     INT            NOT NULL DEFAULT 1,
     available_slots INT            NOT NULL DEFAULT 1,
-    price_per_hour  DECIMAL(10,2)  NOT NULL DEFAULT 500,
-    is_event_mode   BOOLEAN        NOT NULL DEFAULT FALSE,
-    event_price     DECIMAL(10,2),
+    price_per_slot  DECIMAL(10,2)  NOT NULL DEFAULT 500,
+    event_enabled   BOOLEAN        NOT NULL DEFAULT FALSE,
+    current_event_id BIGINT REFERENCES events(id),
     created_at      TIMESTAMP      NOT NULL DEFAULT NOW()
 );
 
@@ -49,18 +62,5 @@ CREATE TABLE IF NOT EXISTS payments (
     tx_ref          VARCHAR(100)   UNIQUE NOT NULL,
     flutterwave_id  VARCHAR(100),
     paid_at         TIMESTAMP,
-    created_at      TIMESTAMP      NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS events (
-    id              BIGSERIAL PRIMARY KEY,
-    name            VARCHAR(150)   NOT NULL,
-    venue           VARCHAR(255)   NOT NULL,
-    latitude        DECIMAL(10,8)  NOT NULL,
-    longitude       DECIMAL(11,8)  NOT NULL,
-    event_date      TIMESTAMP      NOT NULL,
-    radius_km       DECIMAL(5,2)   NOT NULL DEFAULT 1.0,
-    is_active       BOOLEAN        NOT NULL DEFAULT FALSE,
-    price_multiplier DECIMAL(4,2)  NOT NULL DEFAULT 2.0,
     created_at      TIMESTAMP      NOT NULL DEFAULT NOW()
 );

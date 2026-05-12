@@ -1,6 +1,50 @@
 -- V2__insert_demo_data.sql
 -- Seeds Kigali parking data for demo/hackathon
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'users'
+      AND column_name = 'name'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'users'
+      AND column_name = 'full_name'
+  ) THEN
+    EXECUTE 'ALTER TABLE users RENAME COLUMN name TO full_name';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'users'
+      AND column_name = 'full_name'
+  ) THEN
+    EXECUTE 'ALTER TABLE users ADD COLUMN full_name VARCHAR(100)';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'users'
+      AND column_name = 'phone'
+  ) THEN
+    EXECUTE 'ALTER TABLE users ADD COLUMN phone VARCHAR(20)';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'users'
+      AND column_name = 'created_at'
+  ) THEN
+    EXECUTE 'ALTER TABLE users ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW()';
+  END IF;
+END $$;
+
 -- Admin user (password: Admin@123 — bcrypt)
 INSERT INTO users (full_name, email, phone, password, role) VALUES
 ('Admin User',
@@ -21,7 +65,7 @@ ON CONFLICT (email) DO NOTHING;
 
 -- 5 real Kigali parking spaces
 INSERT INTO parking_spaces
-  (host_id, name, address, latitude, longitude, total_slots, available_slots, price_per_hour)
+  (host_id, name, address, latitude, longitude, total_slots, available_slots, price_per_slot)
 SELECT id, name, address, lat, lng, slots, slots, price FROM (
   VALUES
     (2, 'BK Arena Parking',
