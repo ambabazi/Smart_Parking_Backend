@@ -45,4 +45,13 @@ public class ParkingSpace {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_event_id")
     private Event currentEvent;    // Set when eventEnabled = true
+
+    // Compatibility: tests expect price per hour as BigDecimal
+    public void setPricePerHour(java.math.BigDecimal pricePerHour) {
+        this.pricePerSlot = pricePerHour == null ? null : pricePerHour.doubleValue();
+    }
+
+    public java.math.BigDecimal getPricePerHour() {
+        return this.pricePerSlot == null ? null : java.math.BigDecimal.valueOf(this.pricePerSlot);
+    }
 }

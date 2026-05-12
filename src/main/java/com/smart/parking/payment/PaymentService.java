@@ -32,7 +32,7 @@ public class PaymentService {
 
     // 1. Generate Payment Link [cite: 439, 440, 441, 455, 461]
     public String initiatePayment(Reservation res) {
-        BigDecimal totalAmount = res.getParkingSpace().getPricePerHour()
+                BigDecimal totalAmount = BigDecimal.valueOf(res.getParkingSpace().getPricePerSlot())
                 .multiply(BigDecimal.valueOf(res.getSlotCount()));
 
         Map<String, Object> payload = Map.of(

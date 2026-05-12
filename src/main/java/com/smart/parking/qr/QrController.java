@@ -1,33 +1,56 @@
 package com.smart.parking.qr;
 
-import com.smart.parking.reservation.Reservation;
-import com.smart.parking.reservation.ReservationRepository;
+import com.smart.parking.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/verify-qr")
+@RequestMapping("/api/qr")
 @RequiredArgsConstructor
 public class QrController {
 
-    private final ReservationRepository reservationRepository;
+    private final QrService qrService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyAuthority('HOST', 'ADMIN')") // Only staff can verify
-    public ResponseEntity<?> verifyQrToken(@RequestBody VerifyRequest request) {
-        Reservation reservation = reservationRepository.findByQrCode(request.getToken())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid QR Token"));
-
-        if (reservation.isVerified()) {
-            return ResponseEntity.badRequest().body("Token already used!");
+    /**
+     * Generate a QR PNG for a reservation.
+     * BE2 will call this after a booking is confirmed.
+     * GET /api/qr/generate?reservationId=1&userId=2
+     */
+    @GetMapping(value = "/generate", produces = MediaType.IMAGE_PNG_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> generateQr(
+            @RequestParam Long reservationId,
+            @RequestParam Long userId) {
+        try {
+            byte[] png = qrService.generateQrBytes(reservationId, userId);
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                    "inline; filename=qr-" + reservationId + ".png")
+                .body(png);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
+    }
 
-        // Mark as verified and save
-        reservation.setVerified(true);
-        reservationRepository.save(reservation);
-
-        return ResponseEntity.ok("APPROVED: Reservation verified for " + reservation.getSlotCount() + " slots.");
+    /**
+     * Verify a scanned QR code.
+     * HOST scans the driver's QR at entry.
+     * POST /api/qr/verify
+     */
+    @PostMapping("/verify")
+    @PreAuthorize("hasAuthority('HOST') or hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Boolean>> verifyQr(
+            @Valid @RequestBody VerifyRequest request) {
+        boolean valid = qrService.verifyQrContent(
+            request.getQrContent(), request.getReservationId());
+        if (valid) {
+            return ResponseEntity.ok(
+                ApiResponse.success("QR is valid", true));
+        }
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error("Invalid or expired QR code"));
     }
 }

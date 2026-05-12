@@ -29,7 +29,7 @@ public class PaymentController {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
-        if (reservation.isPaid()) {
+        if (Boolean.TRUE.equals(reservation.getPaid())) {
             return ResponseEntity.badRequest().body("Reservation is already paid.");
         }
 

@@ -1,16 +1,27 @@
 package com.smart.parking.auth;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class RegisterRequest {
-    private String name;
+
+    @NotBlank(message = "Full name is required")
+    private String fullName;
+
+    @Email(message = "Valid email required")
+    @NotBlank
     private String email;
+
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^\\+250[0-9]{9}$",
+             message = "Phone must be in format +250XXXXXXXXX")
+    private String phone;
+
+    @NotBlank
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
-    private Role role;
-    private String plateNumber;
+
+    // DRIVER by default; pass HOST to register as host
+    private Role role = Role.DRIVER;
 }

@@ -1,9 +1,10 @@
 package com.smart.parking.auth;
 
+import com.smart.parking.common.ApiResponse;
 import com.smart.parking.security.JwtService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.http.*;
+import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,47 +14,61 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authManager;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
 
-    public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already in use");
+    public ResponseEntity<ApiResponse<AuthResponse>> register(RegisterRequest req) {
+        if (userRepository.existsByEmail(req.getEmail())) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Email already registered"));
+        }
+        if (userRepository.existsByPhone(req.getPhone())) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Phone number already registered"));
         }
 
-        var user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.DRIVER)
-                .plateNumber(request.getPlateNumber())
+        User user = User.builder()
+                .fullName(req.getFullName())
+                .email(req.getEmail())
+                .phone(req.getPhone())
+                .password(passwordEncoder.encode(req.getPassword()))
+                .role(req.getRole() != null ? req.getRole() : Role.DRIVER)
                 .build();
 
         userRepository.save(user);
-        var jwtToken = jwtService.generateToken(user);
 
-        return AuthResponse.builder()
-                .token(jwtToken)
-                .user(user)
-                .build();
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse.success("Registration successful",
+                AuthResponse.builder()
+                    .token(token)
+                    .userId(user.getId())
+                    .fullName(user.getFullName())
+                    .email(user.getEmail())
+                    .role(user.getRole().name())
+                    .build()));
     }
 
-    public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
+    public ResponseEntity<ApiResponse<AuthResponse>> login(LoginRequest req) {
+        try {
+            authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                    req.getEmail(), req.getPassword()));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Invalid email or password"));
+        }
 
-        var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
+        String token = jwtService.generateToken(user);
 
-        var jwtToken = jwtService.generateToken(user);
-
-        return AuthResponse.builder()
-                .token(jwtToken)
-                .user(user)
-                .build();
+        return ResponseEntity.ok(ApiResponse.success("Login successful",
+            AuthResponse.builder()
+                .token(token)
+                .userId(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build()));
     }
 }
