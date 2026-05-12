@@ -20,7 +20,7 @@ public class PaymentController {
     private final ReservationRepository reservationRepository;
     private final ObjectMapper objectMapper;
 
-    @Value("${flutterwave.secret.hash}")
+    @Value("${app.flutterwave.secret.hash:}")
     private String flutterwaveSecretHash; // Used to verify Flutterwave webhooks
 
     @PostMapping("/initiate/{reservationId}")
@@ -29,7 +29,7 @@ public class PaymentController {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
-        if (reservation.isPaid()) {
+        if (Boolean.TRUE.equals(reservation.getPaid())) {
             return ResponseEntity.badRequest().body("Reservation is already paid.");
         }
 

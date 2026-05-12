@@ -1,15 +1,13 @@
 package com.smart.parking.auth;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Data @Builder @AllArgsConstructor @NoArgsConstructor
 public class AuthResponse {
     private String token;
-    private User user;
+    private String type = "Bearer";
+    private Long userId;
+    private String fullName;
+    private String email;
+    private String role;
 }

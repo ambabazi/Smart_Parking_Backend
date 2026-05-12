@@ -7,13 +7,14 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
+@Table(name = "payments")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Payment {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
@@ -22,5 +23,6 @@ public class Payment {
 
     private BigDecimal amount;
     private String status;
+    @Column(name = "flutterwave_id")
     private String transactionId;
 }

@@ -22,7 +22,7 @@ public class PaymentService {
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
 
-    @Value("${flutterwave.secret.key}")
+    @Value("${app.flutterwave.secret.key:}")
     private String flwSecretKey;
 
     @Value("${app.frontend.url:http://localhost:3000}")
@@ -32,7 +32,7 @@ public class PaymentService {
 
     // 1. Generate Payment Link [cite: 439, 440, 441, 455, 461]
     public String initiatePayment(Reservation res) {
-        BigDecimal totalAmount = res.getParkingSpace().getPricePerHour()
+                BigDecimal totalAmount = BigDecimal.valueOf(res.getParkingSpace().getPricePerSlot())
                 .multiply(BigDecimal.valueOf(res.getSlotCount()));
 
         Map<String, Object> payload = Map.of(
@@ -42,7 +42,7 @@ public class PaymentService {
                 "redirect_url", frontendUrl + "/payment/callback",
                 "customer", Map.of(
                         "email", res.getUser().getEmail(),
-                        "name", res.getUser().getName()
+                        "name", res.getUser().getFullName()
                 ),
                 "customizations", Map.of(
                         "title", "Kigali Smart Parking",
