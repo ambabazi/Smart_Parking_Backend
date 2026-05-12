@@ -42,7 +42,7 @@ public class PaymentService {
                 "redirect_url", frontendUrl + "/payment/callback",
                 "customer", Map.of(
                         "email", res.getUser().getEmail(),
-                        "name", res.getUser().getName()
+                        "name", res.getUser().getFullName()
                 ),
                 "customizations", Map.of(
                         "title", "Kigali Smart Parking",

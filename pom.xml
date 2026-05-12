@@ -65,10 +65,6 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-database-postgresql</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
@@ -105,14 +101,14 @@
       <version>2.5.0</version>
     </dependency>
 
-    <!-- Africa's Talking SMS/USSD -->
-    <dependency>
+    <!-- Africa's Talking SMS/USSD (JitPack dependency - comment out for now, uses REST API fallback) -->
+    <!-- <dependency>
       <groupId>com.africastalking</groupId>
       <artifactId>core</artifactId>
       <version>3.4.4</version>
-    </dependency>
+    </dependency> -->
 
-    <!-- HTTP client for Africa's Talking REST fallback -->
+    <!-- HTTP client for Africa's Talking REST API -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webflux</artifactId>

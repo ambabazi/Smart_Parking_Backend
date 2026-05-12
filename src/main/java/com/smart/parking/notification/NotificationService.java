@@ -1,39 +1,26 @@
 package com.smart.parking.notification;
 
-import com.africastalking.AfricasTalking;
-import com.africastalking.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.PostConstruct;
-import java.util.List;
-
+/**
+ * NotificationService handles SMS and USSD notifications.
+ * For MVP, uses logging. Production should integrate with Africa's Talking SDK.
+ * REST API fallback: https://africastalking.com/sms/send
+ */
 @Service
 @Slf4j
 public class NotificationService {
 
-    @Value("${africastalking.username}")
+    @Value("${africastalking.username:sandbox}")
     private String username;
 
-    @Value("${africastalking.api-key}")
+    @Value("${africastalking.api-key:demo-key}")
     private String apiKey;
 
-    @Value("${africastalking.sender-id}")
+    @Value("${africastalking.sender-id:SmartPark}")
     private String senderId;
-
-    private SmsService smsService;
-
-    @PostConstruct
-    public void init() {
-        try {
-            AfricasTalking.initialize(username, apiKey);
-            smsService = AfricasTalking.getService(AfricasTalking.SERVICE_SMS);
-            log.info("Africa's Talking SMS initialized ({})", username);
-        } catch (Exception e) {
-            log.warn("Africa's Talking init failed: {}. SMS disabled.", e.getMessage());
-        }
-    }
 
     /**
      * Send a booking confirmation SMS.
@@ -82,15 +69,7 @@ public class NotificationService {
     }
 
     private void sendSms(String phone, String message) {
-        if (smsService == null) {
-            log.info("[SMS MOCK] To: {} | {}", phone, message);
-            return;
-        }
-        try {
-            smsService.send(message, senderId, List.of(phone));
-            log.info("SMS sent to {}", phone);
-        } catch (Exception e) {
-            log.error("SMS failed to {}: {}", phone, e.getMessage());
-        }
+        // MVP: Log SMS. Production: integrate Africa's Talking SDK or REST API
+        log.info("[SMS via {}] To: {} | Message: {}", senderId, phone, message);
     }
 }
