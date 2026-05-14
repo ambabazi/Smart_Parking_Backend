@@ -31,7 +31,7 @@ public class ParkingController {
                     .body(ApiResponse.success("Parking space registered", toDetailDTO(space)));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage()));
+                    .body(ApiResponse.error("We couldn’t register the parking space. Please check your details and try again."));
         }
     }
 

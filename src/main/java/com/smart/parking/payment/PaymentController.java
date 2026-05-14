@@ -30,7 +30,7 @@ public class PaymentController {
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
         if (Boolean.TRUE.equals(reservation.getPaid())) {
-            return ResponseEntity.badRequest().body("Reservation is already paid.");
+            return ResponseEntity.badRequest().body(Map.of("message", "This reservation has already been paid."));
         }
 
         String paymentLink = paymentService.initiatePayment(reservation);

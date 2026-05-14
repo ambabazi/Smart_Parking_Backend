@@ -30,9 +30,9 @@ public class ReservationController {
             return ResponseEntity.ok(toResponseDTO(reservation));
 
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("An error occurred during booking.");
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t create your reservation right now. Please try again."));
         }
     }
 
@@ -68,7 +68,7 @@ public class ReservationController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error cancelling reservation"));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t cancel the reservation right now. Please try again."));
         }
     }
 
@@ -96,7 +96,7 @@ public class ReservationController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error checking in: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t check you in right now. Please try again."));
         }
     }
 
@@ -112,7 +112,7 @@ public class ReservationController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error checking out: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t complete checkout right now. Please try again."));
         }
     }
 
@@ -129,7 +129,7 @@ public class ReservationController {
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error paying overtime: " + e.getMessage()));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t process the overtime payment right now. Please try again."));
         }
     }
 
