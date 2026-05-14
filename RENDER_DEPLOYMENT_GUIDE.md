@@ -111,14 +111,16 @@ You'll need these in Step 5.
 
 Fill in the form:
 
+Render does not show a Java runtime option for this service. Select **Docker** and let the repository `Dockerfile` build and run the Spring Boot app.
+
 | Field | Value | Notes |
 |-------|-------|-------|
 | **Name** | `smart-parking-api` | Your service name |
 | **Region** | Same as database | Reduce latency |
 | **Branch** | `main` | Default branch |
-| **Runtime** | `Java 21` | Select from dropdown |
-| **Build Command** | `mvn clean package -DskipTests` | Maven build |
-| **Start Command** | `java -jar target/parking-0.0.1-SNAPSHOT.jar` | Run the JAR |
+| **Runtime** | `Docker` | Use the repo `Dockerfile` |
+| **Build Command** | Not needed | Dockerfile handles the build |
+| **Start Command** | Not needed | Dockerfile handles the start command |
 | **Instance Type** | `Free` (or Standard) | Free has limitations |
 
 ### 5.3 Deploy
@@ -156,6 +158,58 @@ AT_API_KEY=your_sandbox_key
 AT_SENDER_ID=SmartPark
 AT_ENV=sandbox
 ```
+
+### Troubleshooting: "Connection to localhost:5432 refused" during startup
+
+If your Render deployment fails during startup with errors like "Connection to localhost:5432 refused" (Flyway or HikariCP stack traces), the app is unable to reach the PostgreSQL instance. Common causes:
+
+- The database environment variables are missing or in the wrong format.
+- `DB_URL` is not a JDBC URL. The application expects a JDBC URL like `jdbc:postgresql://HOST:PORT/DB`.
+- The database host/port are unreachable from the Render service (wrong host, firewall, or wrong region).
+
+Render-managed Postgres commonly exposes a `DATABASE_URL` value in this form:
+
+```
+postgres://user:password@host:5432/dbname
+```
+
+Spring Boot's JDBC driver needs a URL starting with `jdbc:postgresql://`. On Render you should set these environment variables for the web service (Environment → Add Variable):
+
+- `DB_URL`: `jdbc:postgresql://host:5432/dbname`
+- `DB_USERNAME`: `user`
+- `DB_PASSWORD`: `password`
+
+If you only have `DATABASE_URL` from Render, you can either convert it locally (or use the included helper script) and then paste the three values into Render's Environment editor. Example (bash):
+
+```bash
+# Example: convert Render's DATABASE_URL into JDBC pieces
+RENDER_DATABASE_URL='postgres://user:pass@host:5432/dbname'
+RENDER_NO_PREFIX=${RENDER_DATABASE_URL#postgres://}
+USERPASS=${RENDER_NO_PREFIX%%@*}
+HOST_PORT_DB=${RENDER_NO_PREFIX#*@}
+DB_USER=${USERPASS%%:*}
+DB_PASS=${USERPASS#*:}
+DB_HOST=${HOST_PORT_DB%%/*}
+DB_NAME=${HOST_PORT_DB#*/}
+DB_URL="jdbc:postgresql://${DB_HOST}/${DB_NAME}"
+echo "DB_URL=$DB_URL"
+echo "DB_USERNAME=$DB_USER"
+echo "DB_PASSWORD=$DB_PASS"
+```
+
+Copy the printed `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` into Render's web service Environment variables and redeploy.
+
+Note: The application now accepts `DATABASE_URL` directly — you can set `DATABASE_URL` to Render's External URL and the app will parse it at startup. If you prefer explicit vars, set `DB_URL` (JDBC), `DB_USERNAME`, and `DB_PASSWORD` instead.
+
+Additional checklist if problem persists:
+
+- Confirm the DB host/port are correct and reachable (same region reduces latency).
+- Ensure `DB_USERNAME`/`DB_PASSWORD` are correct and the user has permission to run migrations.
+- If using a private DB or VPC, make sure your Render service has network access to it.
+- Temporarily disable Flyway (`spring.flyway.enabled=false`) to let the app start while you debug connectivity (not a production fix).
+
+Flyway runs at application startup, so any unreachable DB will cause the boot to fail fast and exit with status 1. Fixing the env var format and connectivity normally resolves the error.
+
 
 ### Generate JWT_SECRET
 
