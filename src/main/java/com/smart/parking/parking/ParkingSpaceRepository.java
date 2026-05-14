@@ -39,4 +39,11 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ParkingSpace p WHERE p.id = :id")
     Optional<ParkingSpace> findByIdWithLock(@Param("id") Long id);
+
+    // New: Find all parking spaces owned by a HOST
+    @Query("SELECT p FROM ParkingSpace p WHERE p.owner.email = :ownerEmail")
+    List<ParkingSpace> findByOwnerEmail(@Param("ownerEmail") String ownerEmail);
+
+    // New: Find parking spaces by owner ID
+    List<ParkingSpace> findByOwnerId(Long ownerId);
 }

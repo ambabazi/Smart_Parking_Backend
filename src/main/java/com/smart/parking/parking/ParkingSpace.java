@@ -1,5 +1,6 @@
 package com.smart.parking.parking;
 
+import com.smart.parking.auth.User;
 import com.smart.parking.event.Event;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,10 @@ public class ParkingSpace {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;            // The HOST or owner of this parking space
 
     @Column(nullable = false)
     private String name;          // e.g. "Kacyiru Parking"
