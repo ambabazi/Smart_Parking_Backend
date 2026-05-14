@@ -72,4 +72,20 @@ public class AuthService {
                 .body(ApiResponse.error("Invalid email or password"));
         }
     }
+
+    public ResponseEntity<ApiResponse<UserProfileDTO>> getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        
+        UserProfileDTO profile = UserProfileDTO.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .role(user.getRole().name())
+                .createdAt(user.getCreatedAt())
+                .build();
+        
+        return ResponseEntity.ok(ApiResponse.success("User profile retrieved", profile));
+    }
 }

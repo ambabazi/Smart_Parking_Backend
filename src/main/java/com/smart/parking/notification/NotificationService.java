@@ -68,7 +68,7 @@ public class NotificationService {
         sendSms(hostPhone, msg);
     }
 
-    private void sendSms(String phone, String message) {
+    public void sendSms(String phone, String message) {
         // MVP: Log SMS. Production: integrate Africa's Talking SDK or REST API
         log.info("[SMS via {}] To: {} | Message: {}", senderId, phone, message);
     }

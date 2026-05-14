@@ -1,9 +1,13 @@
 package com.smart.parking.notification;
 
+import com.smart.parking.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * USSD Controller — handles Africa's Talking USSD callbacks.
@@ -20,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Slf4j
 public class UssdController {
+
+    private final NotificationService notificationService;
 
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
                  produces = MediaType.TEXT_PLAIN_VALUE)
@@ -73,5 +79,28 @@ public class UssdController {
         }
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/sms")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, String>>> sendSms(
+            @RequestBody Map<String, String> request) {
+        String phoneNumber = request.get("phoneNumber");
+        String message = request.get("message");
+
+        if (phoneNumber == null || message == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("phoneNumber and message are required"));
+        }
+
+        try {
+            notificationService.sendSms(phoneNumber, message);
+            return ResponseEntity.ok(
+                    ApiResponse.success("SMS sent successfully",
+                            Map.of("phone", phoneNumber, "status", "sent")));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Failed to send SMS: " + e.getMessage()));
+        }
     }
 }
