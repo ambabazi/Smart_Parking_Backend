@@ -1,6 +1,14 @@
 package com.smart.parking.auth;
 
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
 public class LoginRequest {
-    public String username;
-    public String password;
+
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
 }

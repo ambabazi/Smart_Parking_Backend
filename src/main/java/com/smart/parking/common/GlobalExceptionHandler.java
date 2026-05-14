@@ -15,30 +15,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, String>> handleResponseStatus(
-            ResponseStatusException ex) {
-        return ResponseEntity
-                .status(ex.getStatusCode())
-                .body(Map.of("error", ex.getReason()));
+	    ResponseStatusException ex) {
+	return ResponseEntity
+		.status(ex.getStatusCode())
+		.body(Map.of("error", ex.getReason()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(
-            MethodArgumentNotValidException ex) {
-        String message = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(FieldError::getDefaultMessage)
-                .findFirst()
-                .orElse("Validation failed");
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", message));
+	    MethodArgumentNotValidException ex) {
+	String message = ex.getBindingResult()
+		.getFieldErrors()
+		.stream()
+		.map(FieldError::getDefaultMessage)
+		.findFirst()
+		.orElse("Validation failed");
+	return ResponseEntity
+		.status(HttpStatus.BAD_REQUEST)
+		.body(Map.of("error", message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception ex) {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Something went wrong. Please try again."));
+	return ResponseEntity
+		.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		.body(Map.of("error", "Something went wrong. Please try again."));
     }
 }
