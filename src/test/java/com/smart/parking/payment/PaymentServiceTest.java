@@ -66,9 +66,11 @@ class PaymentServiceTest {
                 .paid(false)
                 .build();
 
-        // Set frontend URL
+        // Set frontend URL and flutterwave secret key from env when available.
         ReflectionTestUtils.setField(paymentService, "frontendUrl", "http://localhost:3000");
-        ReflectionTestUtils.setField(paymentService, "flwSecretKey", "test-secret-key");
+        String flwSecret = System.getenv("FLW_SECRET_KEY");
+        if (flwSecret == null || flwSecret.isEmpty()) flwSecret = "test-secret";
+        ReflectionTestUtils.setField(paymentService, "flwSecretKey", flwSecret);
     }
 
     @Test

@@ -17,9 +17,20 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
-        // Use reflection to set the secret and expiration
-        ReflectionTestUtils.setField(jwtService, "secret", "test-secret-key-that-is-long-enough-for-testing-purposes");
-        ReflectionTestUtils.setField(jwtService, "expirationMs", 86400000L);
+        // Use reflection to set the secret and expiration from environment variables when available.
+        String secret = System.getenv("JWT_SECRET");
+        if (secret == null || secret.isEmpty()) {
+            secret = "test-secret"; // short fallback used only for local tests
+        }
+        ReflectionTestUtils.setField(jwtService, "secret", secret);
+
+        String expEnv = System.getenv("JWT_EXPIRATION");
+        long expiration = 86400000L;
+        try {
+            if (expEnv != null && !expEnv.isEmpty()) expiration = Long.parseLong(expEnv);
+        } catch (NumberFormatException ignored) {
+        }
+        ReflectionTestUtils.setField(jwtService, "expirationMs", expiration);
 
         testUser = User.builder()
                 .id(1L)
