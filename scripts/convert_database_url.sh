@@ -10,8 +10,14 @@ if [ "$#" -ne 1 ]; then
 fi
 
 RAW="$1"
-# strip postgres:// or postgresql://
-NO_PREFIX=$(echo "$RAW" | sed -E 's#^postgres(?:ql)?://##')
+# strip postgres:// or postgresql:// using portable bash expansion
+if [[ "$RAW" == postgresql://* ]]; then
+  NO_PREFIX=${RAW#postgresql://}
+elif [[ "$RAW" == postgres://* ]]; then
+  NO_PREFIX=${RAW#postgres://}
+else
+  NO_PREFIX=$RAW
+fi
 
 USERPASS=${NO_PREFIX%%@*}
 HOST_PORT_DB=${NO_PREFIX#*@}

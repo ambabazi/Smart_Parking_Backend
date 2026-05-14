@@ -84,6 +84,55 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Active reservations", dtos));
     }
 
+    @PostMapping("/{id}/check-in")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> checkIn(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Reservation reservation = reservationService.checkIn(id, userEmail);
+            return ResponseEntity.ok(ApiResponse.success("Checked in successfully", toResponseDTO(reservation)));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Error checking in: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/checkout")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> checkout(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            CheckoutResponse response = reservationService.checkout(id, userEmail);
+            return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Error checking out: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/pay-overtime")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> payOvertime(
+            @PathVariable Long id,
+            @RequestParam java.math.BigDecimal amount,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Reservation reservation = reservationService.payOvertime(id, userEmail, amount);
+            return ResponseEntity.ok(ApiResponse.success("Overtime paid successfully", toResponseDTO(reservation)));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Error paying overtime: " + e.getMessage()));
+        }
+    }
+
     private ReservationResponseDTO toResponseDTO(Reservation res) {
         return ReservationResponseDTO.builder()
                 .id(res.getId())

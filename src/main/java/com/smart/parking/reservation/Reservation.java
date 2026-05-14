@@ -50,6 +50,20 @@ public class Reservation {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // Check-in/Check-out tracking
+    @Column(name = "checked_in_at")
+    private LocalDateTime checkedInAt;
+
+    @Column(name = "checked_out_at")
+    private LocalDateTime checkedOutAt;
+
+    @Column(name = "overtime_amount")
+    private BigDecimal overtimeAmount = BigDecimal.ZERO;
+
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private String status = "ACTIVE"; // ACTIVE, CHECKED_IN, CHECKED_OUT, COMPLETED
+
     // Compatibility: provide boolean-style accessor used by legacy tests
     public boolean isPaid() {
         return Boolean.TRUE.equals(this.paid);
