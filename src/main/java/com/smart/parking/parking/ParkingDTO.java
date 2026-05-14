@@ -6,8 +6,10 @@ package com.smart.parking.parking;
 public record ParkingDTO(
         Long id,
         String name,
+        String address,
         Double latitude,
         Double longitude,
+        Integer totalSlots,
         Integer availableSlots,
         Double pricePerSlot,
         Boolean eventEnabled
