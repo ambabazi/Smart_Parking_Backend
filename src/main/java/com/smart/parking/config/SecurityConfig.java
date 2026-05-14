@@ -18,6 +18,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -66,14 +68,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow your Vercel frontend domain - update with actual domain
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",           // Local development
-            "http://localhost:5173",           // Vite dev server
-            System.getenv("ALLOWED_ORIGINS") != null ? 
-                System.getenv("ALLOWED_ORIGINS") : 
-                "https://yourdomain.vercel.app"
-        ));
+        configuration.setAllowedOrigins(resolveAllowedOrigins());
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -82,5 +77,21 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> resolveAllowedOrigins() {
+        String frontendOrigins = System.getenv("ALLOWED_ORIGINS");
+        Stream<String> configuredOrigins = frontendOrigins == null || frontendOrigins.isBlank()
+                ? Stream.of("https://yourdomain.vercel.app")
+                : Arrays.stream(frontendOrigins.split(","));
+
+        return Stream.concat(
+                        Stream.of("http://localhost:3000", "http://localhost:5173"),
+                        configuredOrigins
+                )
+                .map(String::trim)
+                .map(origin -> origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin)
+                .distinct()
+                .toList();
     }
 }

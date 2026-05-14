@@ -100,34 +100,94 @@ You'll need these in Step 5.
 ---
 
 ## STEP 5: Create Web Service on Render
+### Quick Deploy — step-by-step
 
-### 5.1 Create New Web Service
+Follow these exact steps to deploy the backend on Render. Copy/paste commands where shown.
 
-1. Go to **Dashboard** → **New+** → **Web Service**
-2. Choose **"Build and deploy from a Git repository"**
-3. Click **"Connect"** next to your GitHub repo
+Prerequisites
+- GitHub repo connected to Render (Render should be authorized to your repo).
+- The repo contains the `Dockerfile` (we use it to build the app).
+- You have the Render Database External URL (or credentials) handy.
 
-### 5.2 Configure Web Service
+1) Create the Web Service
+- Go to **Render Dashboard** → **New+** → **Web Service**
+- Choose **Build and deploy from a Git repository**, connect your GitHub repo and select the branch (e.g. `main`).
+- For **Runtime**, choose **Docker** (Render will use the repository `Dockerfile`).
+- For **Name**, pick `smart-parking-api` or similar.
+- Leave Build/Start Command blank — Dockerfile handles the build and run steps.
 
-Fill in the form:
+2) Configure Environment Variables (critical)
+ - Open your Render Web Service → **Environment** → **Add Environment Variable** and add either Option A or Option B below.
 
-Render does not show a Java runtime option for this service. Select **Docker** and let the repository `Dockerfile` build and run the Spring Boot app.
+  Option A — Quick (recommended)
+  - Set `DATABASE_URL` to the External Database URL you copied from the Render Database page. Example:
+    `postgres://user:password@host:5432/dbname`
+  - The app will parse `DATABASE_URL` automatically and construct the JDBC connection.
 
-| Field | Value | Notes |
-|-------|-------|-------|
-| **Name** | `smart-parking-api` | Your service name |
-| **Region** | Same as database | Reduce latency |
-| **Branch** | `main` | Default branch |
-| **Runtime** | `Docker` | Use the repo `Dockerfile` |
-| **Build Command** | Not needed | Dockerfile handles the build |
-| **Start Command** | Not needed | Dockerfile handles the start command |
-| **Instance Type** | `Free` (or Standard) | Free has limitations |
+  Option B — Explicit (optional)
+  - Convert `DATABASE_URL` to explicit JDBC values and set these variables:
+    - `DB_URL` = `jdbc:postgresql://host:5432/dbname`
+    - `DB_USERNAME` = `user`
+    - `DB_PASSWORD` = `password`
+  - Use the helper script locally to convert (see step 3).
 
-### 5.3 Deploy
+  Required additional env vars (add these too):
+  - `JWT_SECRET` = a secure random string (minimum 32 chars)
+  - `JWT_EXPIRATION` = `86400000` (default)
+  - `ALLOWED_ORIGINS` = your frontend URL, for example `https://smart-parking-orpin.vercel.app`
 
-Click **Deploy** and wait 2-5 minutes.
+  Important:
+  - Use the origin only, without a trailing slash or any path.
+  - If you have more than one frontend, separate origins with commas.
 
-**View logs** in Render dashboard to monitor the deployment.
+3) Convert `DATABASE_URL` (if using Option B)
+ - Locally run the provided helper script to get the explicit values:
+
+```bash
+chmod +x scripts/convert_database_url.sh
+./scripts/convert_database_url.sh 'paste-your-external-db-url-here'
+```
+
+ - The script prints `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`. Copy those into Render Environment if you chose Option B.
+
+4) Deploy
+ - Trigger a Manual Deploy from Render UI or push a commit to the branch Render watches.
+ - Open **Logs** for the Web Service and watch startup.
+
+5) What to expect in logs
+ - Successful: Flyway connects, runs migrations, and you see Spring Boot start with an UP health endpoint.
+ - Failure (common): If you see "Connection to localhost:5432 refused" or Flyway/Hikari errors, it means the service did not receive correct DB connection details. Common causes:
+   - `DB_URL` not set and `DATABASE_URL` not set (app defaulted to `jdbc:postgresql://localhost:5432/...`).
+   - `DATABASE_URL` value was not correctly pasted.
+   - Network or permission issue to the DB host.
+
+6) Quick troubleshooting checklist
+ - Confirm Render Web Service → Environment contains either `DATABASE_URL`, or `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` exactly spelled.
+ - Confirm `JWT_SECRET` is present.
+- Confirm `ALLOWED_ORIGINS` matches the frontend origin exactly.
+ - If still failing, try connecting to the DB from your machine (if publicly reachable):
+
+```bash
+psql 'postgres://user:password@host:5432/dbname'
+```
+
+ - As a temporary debug only: disable Flyway migrations so the app can start and you can run checks manually. Add env var:
+   - `SPRING_FLYWAY_ENABLED=false`
+   Then redeploy (do not leave this disabled in production).
+
+7) Verify deployment (once logs show started)
+ - Health check:
+
+```bash
+curl https://your-service-on-render.onrender.com/actuator/health
+```
+
+ - API test: Try a simple API endpoint (e.g., `/api/parking/nearby` depending on your routes).
+
+Notes
+ - The repository's `Dockerfile` builds a Java 21 image and runs the JAR; Render's Docker runtime is the correct choice.
+ - The included `scripts/convert_database_url.sh` prints the explicit env vars if you prefer to set them individually.
+
 
 ---
 
