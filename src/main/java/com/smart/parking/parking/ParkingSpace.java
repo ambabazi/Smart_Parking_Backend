@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "parking_spaces")
-@Data                    // Lombok: generates getters, setters, toString
-@NoArgsConstructor       // Lombok: generates empty constructor (JPA needs this)
-@AllArgsConstructor      // Lombok: generates full constructor
-@Builder                 // Lombok: lets you do ParkingSpace.builder().name("X").build()
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ParkingSpace {
 
     @Id
@@ -22,36 +22,36 @@ public class ParkingSpace {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;            // The HOST or owner of this parking space
+    private User owner;
 
     @Column(nullable = false)
-    private String name;          // e.g. "Kacyiru Parking"
+    private String name;
 
-    private String address;        // Human-readable address
-
-    @Column(nullable = false)
-    private Double latitude;       // GPS lat — used in Haversine formula
+    private String address;
 
     @Column(nullable = false)
-    private Double longitude;      // GPS lng — used in Haversine formula
+    private Double latitude;
 
     @Column(nullable = false)
-    private Integer totalSlots;    // Max capacity
+    private Double longitude;
 
     @Column(nullable = false)
-    private Integer availableSlots; // Decreases on booking, increases on cancellation
+    private Integer totalSlots;
 
     @Column(nullable = false)
-    private Double pricePerSlot;   // Price in RWF per slot per hour
+    private Integer availableSlots;
 
     @Column(nullable = false)
-    private Boolean eventEnabled = false; // BE2-06 flips this to true
+    private Double pricePerSlot;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean eventEnabled = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_event_id")
-    private Event currentEvent;    // Set when eventEnabled = true
+    private Event currentEvent;
 
-    // Compatibility: tests expect price per hour as BigDecimal
     public void setPricePerHour(java.math.BigDecimal pricePerHour) {
         this.pricePerSlot = pricePerHour == null ? null : pricePerHour.doubleValue();
     }
