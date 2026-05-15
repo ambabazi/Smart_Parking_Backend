@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.smart.parking")
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
