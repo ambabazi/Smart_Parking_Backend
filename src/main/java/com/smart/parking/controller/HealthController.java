@@ -8,7 +8,7 @@ import java.io.IOException;
 @RestController
 public class HealthController {
 
-    @GetMapping("/")
+    @GetMapping("/health")
     public void home(HttpServletResponse response) throws IOException {
         response.sendRedirect("/swagger-ui.html");
     }
