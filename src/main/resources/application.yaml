@@ -27,6 +27,9 @@ app:
     encryption:
       key: ${FLUTTERWAVE_ENCRYPTION_KEY:}
 
+  frontend:
+    url: ${FRONTEND_URL:https://smart-parking-frontend.vercel.app}
+
 server:
   port: 8081
 
