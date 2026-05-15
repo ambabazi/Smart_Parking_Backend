@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: smart-parking-api
+    env: docker
+    plan: free
+    repo: ./
+    branch: main
+    dockerfilePath: Dockerfile
+    buildCommand: ./mvnw -Dmaven.test.skip=true package
+    startCommand: java -jar target/parking-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: DB_URL
+        scope: RUNTIME
+        value: "jdbc:postgresql://<DB_HOST>:5432/<DB_NAME>"
+      - key: DB_USERNAME
+        scope: RUNTIME
+        value: "<DB_USER>"
+      - key: DB_PASSWORD
+        scope: RUNTIME
+        value: "<DB_PASS>"
+      - key: JWT_SECRET
+        scope: RUNTIME
+        value: "<replace-with-32-char-secret>"
+      - key: ALLOWED_ORIGINS
+        scope: RUNTIME
+        value: "https://your-frontend.vercel.app"
+
+static_sites:
+  - name: smart-parking-frontend
+    repo: ./Smart-parking-/Smart-parking-
+    branch: main
+    buildCommand: npm ci && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        scope: RUNTIME
+        value: "https://smart-parking-api-xxxxx.onrender.com"
