@@ -9,9 +9,10 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
 
   flyway:
+    enabled: false
     locations: classpath:db/migration
 
 app:

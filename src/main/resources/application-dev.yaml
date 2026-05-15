@@ -1,0 +1,23 @@
+spring:
+  profiles:
+    active: dev
+  
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/smartparking}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # For local dev: create schema from entities to skip complex migrations
+      ddl-auto: create
+
+  flyway:
+    enabled: false  # Skip Flyway for local testing
+    locations: classpath:db/migration
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:secret}
+    expiration: ${JWT_EXPIRATION:86400000}
