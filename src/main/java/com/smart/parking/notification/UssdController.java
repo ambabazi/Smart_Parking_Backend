@@ -100,7 +100,7 @@ public class UssdController {
                             Map.of("phone", phoneNumber, "status", "sent")));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                    .body(ApiResponse.error("Failed to send SMS: " + e.getMessage()));
+                    .body(ApiResponse.error("We couldn’t send the SMS right now. Please try again."));
         }
     }
 }

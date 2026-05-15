@@ -30,9 +30,9 @@ public class ReservationController {
             return ResponseEntity.ok(toResponseDTO(reservation));
 
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("An error occurred during booking.");
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t create your reservation right now. Please try again."));
         }
     }
 
@@ -68,7 +68,7 @@ public class ReservationController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error cancelling reservation"));
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t cancel the reservation right now. Please try again."));
         }
     }
 
@@ -82,6 +82,55 @@ public class ReservationController {
                 .map(this::toResponseDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("Active reservations", dtos));
+    }
+
+    @PostMapping("/{id}/check-in")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> checkIn(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Reservation reservation = reservationService.checkIn(id, userEmail);
+            return ResponseEntity.ok(ApiResponse.success("Checked in successfully", toResponseDTO(reservation)));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t check you in right now. Please try again."));
+        }
+    }
+
+    @PostMapping("/{id}/checkout")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> checkout(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            CheckoutResponse response = reservationService.checkout(id, userEmail);
+            return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t complete checkout right now. Please try again."));
+        }
+    }
+
+    @PostMapping("/{id}/pay-overtime")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> payOvertime(
+            @PathVariable Long id,
+            @RequestParam java.math.BigDecimal amount,
+            Authentication authentication) {
+        try {
+            String userEmail = authentication.getName();
+            Reservation reservation = reservationService.payOvertime(id, userEmail, amount);
+            return ResponseEntity.ok(ApiResponse.success("Overtime paid successfully", toResponseDTO(reservation)));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("We couldn’t process the overtime payment right now. Please try again."));
+        }
     }
 
     private ReservationResponseDTO toResponseDTO(Reservation res) {

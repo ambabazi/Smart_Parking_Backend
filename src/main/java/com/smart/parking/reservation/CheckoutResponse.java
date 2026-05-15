@@ -1,0 +1,23 @@
+package com.smart.parking.reservation;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class CheckoutResponse {
+    private Long reservationId;
+    private LocalDateTime checkedOutAt;
+    private LocalDateTime bookedUntil;
+    private Boolean hasOvertime = false;
+    private Long overtimeMinutes = 0L;
+    private BigDecimal overtimeAmount;
+    private String message;
+}

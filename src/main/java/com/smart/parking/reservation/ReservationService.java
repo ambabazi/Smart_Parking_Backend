@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -79,6 +81,96 @@ public class ReservationService {
         // Mark reservation as verified:false (cancelled state)
         res.setVerified(false);
 
+        return reservationRepo.save(res);
+    }
+
+    @Transactional
+    public Reservation checkIn(Long reservationId, String userEmail) throws Exception {
+        Reservation res = reservationRepo.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+
+        if (!res.getUser().getEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("You can only check in to your own reservations");
+        }
+
+        if (!res.getStatus().equals("ACTIVE")) {
+            throw new IllegalStateException("Cannot check in to a " + res.getStatus() + " reservation");
+        }
+
+        if (!res.isPaid()) {
+            throw new IllegalStateException("Reservation must be paid before check-in");
+        }
+
+        res.setCheckedInAt(LocalDateTime.now());
+        res.setStatus("CHECKED_IN");
+        return reservationRepo.save(res);
+    }
+
+    @Transactional
+    public CheckoutResponse checkout(Long reservationId, String userEmail) throws Exception {
+        Reservation res = reservationRepo.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+
+        if (!res.getUser().getEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("You can only check out from your own reservations");
+        }
+
+        if (!res.getStatus().equals("CHECKED_IN")) {
+            throw new IllegalStateException("Cannot check out; reservation status is " + res.getStatus());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        res.setCheckedOutAt(now);
+        res.setStatus("CHECKED_OUT");
+
+        // Calculate overtime
+        Duration overstay = Duration.between(res.getEndTime(), now);
+        long overtimeMinutes = overstay.toMinutes();
+
+        CheckoutResponse response = new CheckoutResponse();
+        response.setReservationId(res.getId());
+        response.setCheckedOutAt(now);
+        response.setBookedUntil(res.getEndTime());
+
+        if (overtimeMinutes > 0) {
+            // Charge overtime: 10 RWF per minute
+            BigDecimal overtimeCharge = BigDecimal.valueOf(overtimeMinutes * 10L);
+            res.setOvertimeAmount(overtimeCharge);
+            response.setHasOvertime(true);
+            response.setOvertimeMinutes(overtimeMinutes);
+            response.setOvertimeAmount(overtimeCharge);
+            response.setMessage("Overtime detected. Please pay " + overtimeCharge + " RWF before leaving.");
+            reservationRepo.save(res);
+            return response;
+        }
+
+        // No overtime
+        res.setStatus("COMPLETED");
+        response.setHasOvertime(false);
+        response.setMessage("Checked out successfully.");
+        reservationRepo.save(res);
+        return response;
+    }
+
+    @Transactional
+    public Reservation payOvertime(Long reservationId, String userEmail, BigDecimal amount) throws Exception {
+        Reservation res = reservationRepo.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+
+        if (!res.getUser().getEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("You can only pay for your own reservations");
+        }
+
+        if (res.getOvertimeAmount() == null || res.getOvertimeAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("No overtime to pay for this reservation");
+        }
+
+        if (amount.compareTo(res.getOvertimeAmount()) < 0) {
+            throw new IllegalArgumentException("Insufficient payment. Owed: " + res.getOvertimeAmount());
+        }
+
+        res.setOvertimeAmount(BigDecimal.ZERO);
+        res.setStatus("COMPLETED");
         return reservationRepo.save(res);
     }
 }
