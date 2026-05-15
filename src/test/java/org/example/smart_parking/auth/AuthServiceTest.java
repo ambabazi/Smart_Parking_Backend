@@ -56,7 +56,7 @@ class AuthServiceTest {
 
         // Assert
         assertNotNull(responseEntity);
-        assertEquals(201, responseEntity.getStatusCodeValue());
+        assertEquals(201, responseEntity.getStatusCode().value());
         ApiResponse<AuthResponse> body = responseEntity.getBody();
         assertTrue(body.isSuccess());
         assertEquals("Registration successful", body.getMessage());
@@ -81,7 +81,7 @@ class AuthServiceTest {
         // Act & Assert
         ResponseEntity<ApiResponse<AuthResponse>> responseEntity = authService.register(request);
 
-        assertEquals(400, responseEntity.getStatusCodeValue());
+        assertEquals(400, responseEntity.getStatusCode().value());
         assertFalse(responseEntity.getBody().isSuccess());
         assertEquals("Email already registered", responseEntity.getBody().getMessage());
         verify(userRepository, never()).save(any(User.class));
@@ -147,7 +147,7 @@ class AuthServiceTest {
 
         // Assert
         assertNotNull(responseEntity);
-        assertEquals(200, responseEntity.getStatusCodeValue());
+        assertEquals(200, responseEntity.getStatusCode().value());
         ApiResponse<AuthResponse> body = responseEntity.getBody();
         assertTrue(body.isSuccess());
         assertEquals("Login successful", body.getMessage());
@@ -172,7 +172,7 @@ class AuthServiceTest {
         // Act & Assert
         ResponseEntity<ApiResponse<AuthResponse>> responseEntity = authService.login(request);
 
-        assertEquals(401, responseEntity.getStatusCodeValue());
+        assertEquals(401, responseEntity.getStatusCode().value());
         assertFalse(responseEntity.getBody().isSuccess());
         assertEquals("Invalid email or password", responseEntity.getBody().getMessage());
         verify(userRepository, times(1)).findByEmail(request.getEmail());
@@ -192,7 +192,7 @@ class AuthServiceTest {
         // Act & Assert
         ResponseEntity<ApiResponse<AuthResponse>> responseEntity = authService.login(request);
 
-        assertEquals(401, responseEntity.getStatusCodeValue());
+        assertEquals(401, responseEntity.getStatusCode().value());
         assertFalse(responseEntity.getBody().isSuccess());
         assertEquals("Invalid email or password", responseEntity.getBody().getMessage());
         verify(jwtService, never()).generateToken(any(User.class));
