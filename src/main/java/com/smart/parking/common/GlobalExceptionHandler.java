@@ -50,15 +50,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleInvalidState(IllegalStateException ex) {
         return ResponseEntity.badRequest().body(ApiResponse.error(safeMessage(ex.getMessage(), "This action cannot be completed right now.")));
     }
-
-    @ExceptionHandler(Exception.class)
+    
+	@ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleFallback(Exception ex) {
-        log.error("Unhandled exception", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Something went wrong. Please try again."));
+    // Let SpringDoc handle its own errors
+    if (ex.getClass().getName().startsWith("org.springdoc") ||
+        ex.getClass().getName().startsWith("io.swagger")) {
+        throw new RuntimeException(ex);
     }
-
-    private String safeMessage(String message, String fallback) {
-        if (message == null || message.isBlank()) return fallback;
-        return message;
-    }
+    log.error("Unhandled exception", ex);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiResponse.error("Something went wrong. Please try again."));
+}
 }
