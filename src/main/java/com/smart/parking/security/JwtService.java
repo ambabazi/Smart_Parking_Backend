@@ -1,6 +1,7 @@
 package com.smart.parking.security;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,24 +31,24 @@ public class JwtService {
         claims.put("role", userDetails.getAuthorities()
                 .iterator().next().getAuthority());
         return Jwts.builder()
-                .claims(claims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getKey())
+            .setClaims(claims)
+            .setSubject(userDetails.getUsername())
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+            .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
-        return Jwts.parser().verifyWith(getKey()).build()
-                .parseSignedClaims(token).getPayload().getSubject();
+        return Jwts.parserBuilder().setSigningKey(getKey()).build()
+            .parseClaimsJws(token).getBody().getSubject();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         try {
-            String username = extractUsername(token);
-            Date expiry = Jwts.parser().verifyWith(getKey()).build()
-                    .parseSignedClaims(token).getPayload().getExpiration();
+                String username = extractUsername(token);
+                Date expiry = Jwts.parserBuilder().setSigningKey(getKey()).build()
+                    .parseClaimsJws(token).getBody().getExpiration();
             return username.equals(userDetails.getUsername())
                     && expiry.after(new Date());
         } catch (JwtException e) {
