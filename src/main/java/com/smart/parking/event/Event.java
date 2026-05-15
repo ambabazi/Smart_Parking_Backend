@@ -52,4 +52,6 @@ public class Event {
 
     @CreatedDate
     private LocalDateTime createdAt;
+    Long id;
+    public String name;
 }

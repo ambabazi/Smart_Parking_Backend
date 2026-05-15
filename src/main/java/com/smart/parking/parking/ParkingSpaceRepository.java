@@ -10,8 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-
-
 @Repository
 public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long> {
 
@@ -37,4 +35,9 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ParkingSpace p WHERE p.id = :id")
     Optional<ParkingSpace> findByIdWithLock(@Param("id") Long id);
+
+    @Query("SELECT p FROM ParkingSpace p WHERE p.owner.email = :ownerEmail")
+    List<ParkingSpace> findByOwnerEmail(@Param("ownerEmail") String ownerEmail);
+
+    List<ParkingSpace> findByOwnerId(Long ownerId);
 }
