@@ -40,3 +40,7 @@ logging:
     org.apache.catalina: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+
+scheduler:
+  event-deactivation:
+    cron: "0 0 * * * ?"
