@@ -1,0 +1,20 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< org.example:Smart_Parking >----------------------
+[INFO] Building Smart_Parking 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ Smart_Parking ---
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Copying 8 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.10.1:compile (default-compile) @ Smart_Parking ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 64 source files to /home/aggie/IdeaProjects/Smart_Parking/target/classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  14.233 s
+[INFO] Finished at: 2026-05-15T06:20:16+02:00
+[INFO] ------------------------------------------------------------------------
