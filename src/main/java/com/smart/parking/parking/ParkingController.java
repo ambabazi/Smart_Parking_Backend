@@ -3,46 +3,60 @@ package com.smart.parking.parking;
 import com.smart.parking.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping("/api/parking")
+@RequestMapping("/parking-spaces")
 @RequiredArgsConstructor
+@Validated
 public class ParkingController {
 
-    private final ParkingSpaceRepository parkingSpaceRepository;
     private final ParkingService parkingService;
 
     // Public endpoints for searching and viewing parking spaces
     @GetMapping("/nearby")
-    public ResponseEntity<List<ParkingDTO>> getNearby(
+    public ResponseEntity<Page<ParkingDTO>> getNearby(
             @RequestParam Double lat,
             @RequestParam Double lng,
-            @RequestParam(defaultValue = "2000") Double radius
+            @RequestParam(defaultValue = "2000") Double radius,
+            @PageableDefault(size = 10) Pageable pageable
     ) {
-        return ResponseEntity.ok(parkingService.findNearby(lat, lng, radius));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.findNearby(lat, lng, radius, pageable));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ParkingDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(parkingService.getById(id));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.getById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<ParkingDTO>> getAll() {
-        return ResponseEntity.ok(parkingService.getAll());
+    public ResponseEntity<Page<ParkingDTO>> getAll(@PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.getAll(pageable));
     }
 
     @GetMapping("/event/{eventId}")
-    public ResponseEntity<List<ParkingDTO>> getByEvent(@PathVariable Long eventId) {
-        return ResponseEntity.ok(parkingService.getSpacesByEvent(eventId));
+    public ResponseEntity<Page<ParkingDTO>> getByEvent(@PathVariable Long eventId,
+                                                       @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.getSpacesByEvent(eventId, pageable));
     }
 
     // Owner endpoints
@@ -58,9 +72,11 @@ public class ParkingController {
 
     @GetMapping("/mine")
     @PreAuthorize("hasAuthority('HOST')")
-    public ResponseEntity<ApiResponse<List<ParkingSpaceDetailDTO>>> getMyParkingSpaces(Authentication authentication) {
-        List<ParkingSpace> spaces = parkingSpaceRepository.findByOwnerEmail(authentication.getName());
-        List<ParkingSpaceDetailDTO> dtos = spaces.stream().map(this::toDetailDTO).collect(Collectors.toList());
+    public ResponseEntity<ApiResponse<Page<ParkingSpaceDetailDTO>>> getMyParkingSpaces(
+            Authentication authentication,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<ParkingSpaceDetailDTO> dtos = parkingService.getMyParkingSpaces(authentication.getName(), pageable)
+                .map(this::toDetailDTO);
         return ResponseEntity.ok(ApiResponse.success("Your parking spaces", dtos));
     }
 

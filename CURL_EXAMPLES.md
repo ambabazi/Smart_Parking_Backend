@@ -25,29 +25,37 @@ curl https://smart-parking-api-xxxxx.onrender.com/api/auth/me \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
-4) List nearby parking
+4) Refresh token
 
 ```bash
-curl "https://smart-parking-api-xxxxx.onrender.com/api/parking/nearby?lat=-1.95&lng=30.06&radius=2000"
+curl -X POST https://smart-parking-api-xxxxx.onrender.com/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"<REFRESH_TOKEN>"}'
 ```
 
-5) Create parking (HOST)
+5) List nearby parking
 
 ```bash
-curl -X POST https://smart-parking-api-xxxxx.onrender.com/api/parking \
+curl "https://smart-parking-api-xxxxx.onrender.com/parking-spaces/nearby?lat=-1.95&lng=30.06&radius=2000&page=0&size=10"
+```
+
+6) Create parking (HOST)
+
+```bash
+curl -X POST https://smart-parking-api-xxxxx.onrender.com/parking-spaces \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <HOST_JWT>" \
   -d '{"name":"Demo Lot","address":"Kacyiru","latitude":-1.95,"longitude":30.06,"totalSlots":20,"pricePerSlot":500}'
 ```
 
-6) Get my parking (HOST)
+7) Get my parking (HOST)
 
 ```bash
-curl https://smart-parking-api-xxxxx.onrender.com/api/parking/mine \
+curl https://smart-parking-api-xxxxx.onrender.com/parking-spaces/mine?page=0&size=10 \
   -H "Authorization: Bearer <HOST_JWT>"
 ```
 
-7) Create reservation (DRIVER)
+8) Create reservation (DRIVER)
 
 ```bash
 curl -X POST https://smart-parking-api-xxxxx.onrender.com/reservations \
@@ -56,7 +64,7 @@ curl -X POST https://smart-parking-api-xxxxx.onrender.com/reservations \
   -d '{"parkingSpaceId":1,"slotCount":1,"startTime":"2026-05-15T10:00:00Z","endTime":"2026-05-15T12:00:00Z"}'
 ```
 
-8) Verify QR (HOST)
+9) Verify QR (HOST)
 
 ```bash
 curl -X POST https://smart-parking-api-xxxxx.onrender.com/api/qr/verify \
@@ -65,7 +73,7 @@ curl -X POST https://smart-parking-api-xxxxx.onrender.com/api/qr/verify \
   -d '{"reservationId":123,"qrContent":"<QR_PAYLOAD>"}'
 ```
 
-9) Actuator health
+10) Actuator health
 
 ```bash
 curl https://smart-parking-api-xxxxx.onrender.com/actuator/health

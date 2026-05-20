@@ -1,5 +1,7 @@
 package com.smart.parking.reservation;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     // New: Find all reservations by user email
     @Query("SELECT r FROM Reservation r WHERE r.user.email = :email ORDER BY r.createdAt DESC")
+    Page<Reservation> findByUserEmail(@Param("email") String email, Pageable pageable);
+    @Query("SELECT r FROM Reservation r WHERE r.user.email = :email ORDER BY r.createdAt DESC")
     List<Reservation> findByUserEmail(@Param("email") String email);
 
     // New: Find all active reservations (current time within start/end) for a parking space owner
@@ -23,9 +27,18 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         AND r.endTime >= CURRENT_TIMESTAMP
         AND r.paid = true
         """)
+    Page<Reservation> findActiveByOwnerEmail(@Param("ownerEmail") String ownerEmail, Pageable pageable);
+    @Query("""
+        SELECT r FROM Reservation r 
+        WHERE r.parkingSpace.owner.email = :ownerEmail 
+        AND r.startTime <= CURRENT_TIMESTAMP 
+        AND r.endTime >= CURRENT_TIMESTAMP
+        AND r.paid = true
+        """)
     List<Reservation> findActiveByOwnerEmail(@Param("ownerEmail") String ownerEmail);
 
     // New: Find all reservations for a parking space
+    Page<Reservation> findByParkingSpaceId(Long parkingSpaceId, Pageable pageable);
     List<Reservation> findByParkingSpaceId(Long parkingSpaceId);
 
     // New: Find reservations for dashboard analytics
@@ -42,4 +55,25 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         AND r.paid = true
         """)
     Long countActiveReservations();
+
+    @Query("""
+        SELECT COALESCE(SUM(r.slotCount), 0) FROM Reservation r
+        WHERE r.parkingSpace.id = :parkingSpaceId
+        AND r.status IN ('ACTIVE', 'CONFIRMED', 'CHECKED_IN')
+        AND r.startTime < :endTime
+        AND r.endTime > :startTime
+    """)
+    Integer countOccupiedSlots(@Param("parkingSpaceId") Long parkingSpaceId,
+                               @Param("startTime") java.time.LocalDateTime startTime,
+                               @Param("endTime") java.time.LocalDateTime endTime);
+
+    @Query("""
+        SELECT r FROM Reservation r
+        WHERE r.user.id = :driverId
+        AND r.status = 'CHECKED_IN'
+        AND r.startTime <= CURRENT_TIMESTAMP
+        AND r.endTime > CURRENT_TIMESTAMP
+        ORDER BY r.startTime DESC
+    """)
+    java.util.Optional<Reservation> findCurrentActiveReservation(@Param("driverId") Long driverId);
 }

@@ -1,18 +1,23 @@
 package com.smart.parking.reservation;
 
 import com.smart.parking.common.ApiResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/reservations")
 @RequiredArgsConstructor
+@Validated
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -20,14 +25,14 @@ public class ReservationController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('DRIVER')")
-    public ResponseEntity<?> createReservation(
-            @RequestBody BookingRequest request,
+    public ResponseEntity<ApiResponse<ReservationResponseDTO>> createReservation(
+            @Valid @RequestBody BookingRequest request,
             Authentication authentication
     ) {
         try {
             String userEmail = authentication.getName();
             Reservation reservation = reservationService.createReservation(request, userEmail);
-            return ResponseEntity.ok(toResponseDTO(reservation));
+            return ResponseEntity.ok(ApiResponse.success("Reservation created", toResponseDTO(reservation)));
 
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -38,14 +43,40 @@ public class ReservationController {
 
     @GetMapping("/my")
     @PreAuthorize("hasAuthority('DRIVER')")
-    public ResponseEntity<ApiResponse<List<ReservationResponseDTO>>> getMyReservations(
-            Authentication authentication) {
+    public ResponseEntity<ApiResponse<Page<ReservationResponseDTO>>> getMyReservations(
+            Authentication authentication,
+            @PageableDefault(size = 10) Pageable pageable) {
         String userEmail = authentication.getName();
-        List<Reservation> reservations = reservationRepository.findByUserEmail(userEmail);
-        List<ReservationResponseDTO> dtos = reservations.stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+        Page<ReservationResponseDTO> dtos = reservationService.getMyReservations(userEmail, pageable)
+                .map(this::toResponseDTO);
         return ResponseEntity.ok(ApiResponse.success("Your reservations", dtos));
+    }
+
+    @GetMapping("/check-availability")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> checkAvailability(
+            @RequestParam Long parkingSpaceId,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
+            @RequestParam(defaultValue = "1") Integer slotCount
+    ) {
+        try {
+            java.time.LocalDateTime start = java.time.LocalDateTime.parse(startTime);
+            java.time.LocalDateTime end = java.time.LocalDateTime.parse(endTime);
+            AvailabilityResponse res = reservationService.checkAvailability(parkingSpaceId, start, end, slotCount);
+            return ResponseEntity.ok(ApiResponse.success("Availability", res));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/active/current")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> getCurrentParking(Authentication authentication) {
+        String email = authentication.getName();
+        CurrentReservationDTO dto = reservationService.getCurrentParking(email);
+        if (dto == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("Current reservation", dto));
     }
 
     @GetMapping("/{id}")
@@ -74,13 +105,12 @@ public class ReservationController {
 
     @GetMapping("/active")
     @PreAuthorize("hasAuthority('HOST') or hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<List<ReservationResponseDTO>>> getActiveReservations(
-            Authentication authentication) {
+    public ResponseEntity<ApiResponse<Page<ReservationResponseDTO>>> getActiveReservations(
+            Authentication authentication,
+            @PageableDefault(size = 10) Pageable pageable) {
         String ownerEmail = authentication.getName();
-        List<Reservation> reservations = reservationRepository.findActiveByOwnerEmail(ownerEmail);
-        List<ReservationResponseDTO> dtos = reservations.stream()
-                .map(this::toResponseDTO)
-                .collect(Collectors.toList());
+        Page<ReservationResponseDTO> dtos = reservationService.getActiveReservations(ownerEmail, pageable)
+                .map(this::toResponseDTO);
         return ResponseEntity.ok(ApiResponse.success("Active reservations", dtos));
     }
 
@@ -120,7 +150,7 @@ public class ReservationController {
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> payOvertime(
             @PathVariable Long id,
-            @RequestParam java.math.BigDecimal amount,
+            @RequestParam @NotNull @Positive java.math.BigDecimal amount,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();

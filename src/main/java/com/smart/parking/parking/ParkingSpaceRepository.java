@@ -1,6 +1,8 @@
 package com.smart.parking.parking;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -14,21 +16,45 @@ import java.util.Optional;
 public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long> {
 
     // Haversine formula — finds spaces within radiusMetres of lat/lng
-    @Query("""
+    @Query(value = """
             SELECT p FROM ParkingSpace p
             WHERE (6371000 * acos(
                 cos(radians(:lat)) * cos(radians(p.latitude))
                 * cos(radians(p.longitude) - radians(:lng))
                 + sin(radians(:lat)) * sin(radians(p.latitude))
             )) <= :radiusMetres
+            """,
+            countQuery = """
+            SELECT COUNT(p) FROM ParkingSpace p
+            WHERE (6371000 * acos(
+                cos(radians(:lat)) * cos(radians(p.latitude))
+                * cos(radians(p.longitude) - radians(:lng))
+                + sin(radians(:lat)) * sin(radians(p.latitude))
+            )) <= :radiusMetres
             """)
-    List<ParkingSpace> findWithinRadius(
+    Page<ParkingSpace> findWithinRadius(
+            @Param("lat") Double lat,
+            @Param("lng") Double lng,
+            @Param("radiusMetres") Double radiusMetres,
+            Pageable pageable
+    );
+
+        @Query(value = """
+            SELECT p FROM ParkingSpace p
+            WHERE (6371000 * acos(
+            cos(radians(:lat)) * cos(radians(p.latitude))
+            * cos(radians(p.longitude) - radians(:lng))
+            + sin(radians(:lat)) * sin(radians(p.latitude))
+            )) <= :radiusMetres
+            """)
+        List<ParkingSpace> findWithinRadius(
             @Param("lat") Double lat,
             @Param("lng") Double lng,
             @Param("radiusMetres") Double radiusMetres
-    );
+        );
 
     // Used by event module — returns spaces linked to one event
+    Page<ParkingSpace> findByCurrentEventId(Long eventId, Pageable pageable);
     List<ParkingSpace> findByCurrentEventId(Long eventId);
 
     // Pessimistic lock — prevents double booking
@@ -37,6 +63,7 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long
     Optional<ParkingSpace> findByIdWithLock(@Param("id") Long id);
 
     @Query("SELECT p FROM ParkingSpace p WHERE p.owner.email = :ownerEmail")
+    Page<ParkingSpace> findByOwnerEmail(@Param("ownerEmail") String ownerEmail, Pageable pageable);
     List<ParkingSpace> findByOwnerEmail(@Param("ownerEmail") String ownerEmail);
 
     List<ParkingSpace> findByOwnerId(Long ownerId);

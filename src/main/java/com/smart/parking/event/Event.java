@@ -1,6 +1,5 @@
 package com.smart.parking.event;
 
-import jakarta.persistence.*;
 import com.smart.parking.parking.ParkingSpace;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,7 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+        @Index(name = "idx_events_active", columnList = "active"),
+        @Index(name = "idx_events_start_time", columnList = "start_time"),
+        @Index(name = "idx_events_end_time", columnList = "end_time")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

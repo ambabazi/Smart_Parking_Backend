@@ -1,6 +1,6 @@
 # Smart Parking - Newly Implemented Endpoints
 
-This document lists all the endpoints added to complete the MVP. These are available in Swagger UI and the OpenAPI spec at `/api-docs`.
+This document lists the API routes currently implemented in the backend. These are available in Swagger UI and the OpenAPI spec at `/api-docs`. It includes the Redis-backed session refresh flow, paginated list endpoints, and the current public parking routes under `/parking-spaces`.
 
 ## Authentication Endpoints
 
@@ -11,16 +11,40 @@ This document lists all the endpoints added to complete the MVP. These are avail
 - **Response:** User profile with ID, name, email, phone, role, and creation date
 - **Use Case:** Frontend needs to display logged-in user info
 
+### Refresh Session
+- **Endpoint:** `POST /api/auth/refresh`
+- **Auth Required:** NO, but requires a valid refresh token in the body
+- **Body:**
+  ```json
+  {
+    "refreshToken": "<refresh-token>"
+  }
+  ```
+- **Response:** New access token plus a rotated refresh token
+- **Use Case:** Keep users signed in without forcing a full login
+
+### Logout
+- **Endpoint:** `POST /api/auth/logout`
+- **Auth Required:** NO, but requires a valid refresh token in the body
+- **Body:**
+  ```json
+  {
+    "refreshToken": "<refresh-token>"
+  }
+  ```
+- **Response:** Logged-out confirmation
+- **Use Case:** Revoke the stored refresh token from Redis
+
 ---
 
 ## Reservation Endpoints
 
 ### Get My Reservations (Driver)
-- **Endpoint:** `GET /reservations/my`
+- **Endpoint:** `GET /reservations/my?page=0&size=10`
 - **Auth Required:** YES
 - **Allowed Roles:** DRIVER
-- **Response:** List of all reservations made by the logged-in driver
-- **Use Case:** Driver sees their booking history
+- **Response:** Paginated list of reservations made by the logged-in driver
+- **Use Case:** Driver sees their booking history without loading everything at once
 
 ### Get Specific Reservation
 - **Endpoint:** `GET /reservations/{id}`
@@ -54,19 +78,71 @@ This document lists all the endpoints added to complete the MVP. These are avail
 - **Response:** Cancelled reservation details
 - **Use Case:** Driver cancels their booking (slots returned to parking space)
 
+### Check In
+- **Endpoint:** `POST /reservations/{id}/check-in`
+- **Auth Required:** YES
+- **Allowed Roles:** DRIVER
+- **Use Case:** Mark the start of the stay once payment is complete
+
+### Check Out
+- **Endpoint:** `POST /reservations/{id}/checkout`
+- **Auth Required:** YES
+- **Allowed Roles:** DRIVER
+- **Use Case:** End the stay and calculate overtime if needed
+
+### Pay Overtime
+- **Endpoint:** `POST /reservations/{id}/pay-overtime?amount=...`
+- **Auth Required:** YES
+- **Allowed Roles:** DRIVER
+- **Use Case:** Clear an overtime balance before exit
+
 ### Get Active Reservations (Host)
-- **Endpoint:** `GET /reservations/active`
+- **Endpoint:** `GET /reservations/active?page=0&size=10`
 - **Auth Required:** YES
 - **Allowed Roles:** HOST or ADMIN
-- **Response:** List of all currently active reservations at spaces owned by the logged-in host
+- **Response:** Paginated list of currently active reservations at spaces owned by the logged-in host
 - **Use Case:** Host sees who is parked at their locations right now
+
+---
+
+## Public Parking Search Endpoints
+
+### Get All Parking Spaces
+- **Endpoint:** `GET /parking-spaces`
+- **Auth Required:** NO
+- **Response:** List of all parking spaces in the system
+- **Use Case:** Display all available parking spaces to users
+
+### Get Specific Parking Space Details
+- **Endpoint:** `GET /parking-spaces/{id}`
+- **Auth Required:** NO (public)
+- **Path Parameter:** `id` = parking space ID
+- **Response:** Parking space details including owner, pricing, available slots, event status
+- **Use Case:** View detailed info for a single parking space
+
+### Search Nearby Parking Spaces
+- **Endpoint:** `GET /parking-spaces/nearby?lat=...&lng=...&radius=...`
+- **Auth Required:** NO
+- **Query Parameters:**
+  - `lat` (Double) — latitude
+  - `lng` (Double) — longitude
+  - `radius` (Double, default 2000) — search radius in metres
+- **Response:** List of parking spaces within radius, sorted by distance
+- **Use Case:** Find available parking near a location
+
+### Get Spaces Linked to an Event
+- **Endpoint:** `GET /parking-spaces/event/{eventId}`
+- **Auth Required:** NO
+- **Path Parameter:** `eventId` = event ID
+- **Response:** List of parking spaces activated for the event
+- **Use Case:** Show which parking spaces are event-enabled
 
 ---
 
 ## Parking Space Management Endpoints (For HOST Users)
 
 ### Register a Parking Space
-- **Endpoint:** `POST /api/parking`
+- **Endpoint:** `POST /parking-spaces`
 - **Auth Required:** YES
 - **Allowed Roles:** HOST
 - **Body:**
@@ -84,21 +160,14 @@ This document lists all the endpoints added to complete the MVP. These are avail
 - **Use Case:** HOST registers their parking location
 
 ### Get My Parking Spaces
-- **Endpoint:** `GET /api/parking/mine`
+- **Endpoint:** `GET /parking-spaces/mine`
 - **Auth Required:** YES
 - **Allowed Roles:** HOST
 - **Response:** List of all parking spaces owned by the logged-in host
 - **Use Case:** HOST views all their registered parking locations
 
-### Get Specific Parking Space Details
-- **Endpoint:** `GET /api/parking/{id}`
-- **Auth Required:** NO (public)
-- **Path Parameter:** `id` = parking space ID
-- **Response:** Parking space details including owner, pricing, available slots
-- **Use Case:** Anyone view parking space info when searching
-
 ### Update Parking Space
-- **Endpoint:** `PUT /api/parking/{id}`
+- **Endpoint:** `PUT /parking-spaces/{id}`
 - **Auth Required:** YES
 - **Allowed Roles:** HOST (only their own)
 - **Path Parameter:** `id` = parking space ID
@@ -107,12 +176,154 @@ This document lists all the endpoints added to complete the MVP. These are avail
 - **Use Case:** HOST modifies pricing, name, or details of their space
 
 ### Delete Parking Space
-- **Endpoint:** `DELETE /api/parking/{id}`
+- **Endpoint:** `DELETE /parking-spaces/{id}`
 - **Auth Required:** YES
 - **Allowed Roles:** HOST (only their own)
 - **Path Parameter:** `id` = parking space ID
 - **Response:** Success message
 - **Use Case:** HOST removes a parking space listing
+
+---
+
+## Event Management Endpoints
+
+### Create Event
+- **Endpoint:** `POST /events`
+- **Auth Required:** YES
+- **Allowed Roles:** ADMIN
+- **Body:**
+  ```json
+  {
+    "name": "Kigali Arena Concert",
+    "latitude": -1.9500,
+    "longitude": 30.1000,
+    "radiusMetres": 5000,
+    "startTime": "2026-05-15T18:00:00",
+    "endTime": "2026-05-15T23:00:00"
+  }
+  ```
+- **Response:** Created event with ID and number of activated spaces
+- **Use Case:** Admin creates a special event (concert, festival) and auto-activates all nearby parking spaces
+
+### Get Active Events
+- **Endpoint:** `GET /events/active`
+- **Auth Required:** NO
+- **Response:** List of events currently in progress (startTime ≤ now ≤ endTime)
+- **Use Case:** Show active events on the map to users
+
+### Deactivate Event
+- **Endpoint:** `DELETE /events/{id}/deactivate`
+- **Auth Required:** YES
+- **Allowed Roles:** ADMIN
+- **Path Parameter:** `id` = event ID
+- **Response:** 204 No Content (empty response)
+- **Use Case:** End an event and reset all linked parking spaces back to normal
+
+---
+
+## QR Code Endpoints
+
+### Generate QR Code
+- **Endpoint:** `GET /api/qr/generate?reservationId=...&userId=...`
+- **Auth Required:** YES
+- **Allowed Roles:** Any authenticated user
+- **Query Parameters:**
+  - `reservationId` (Long) — reservation ID
+  - `userId` (Long) — user ID
+- **Response:** PNG image (binary)
+- **Use Case:** Generate QR code for reservation verification at entry
+
+### Verify QR Code
+- **Endpoint:** `POST /api/qr/verify`
+- **Auth Required:** YES
+- **Allowed Roles:** HOST or ADMIN
+- **Body:**
+  ```json
+  {
+    "qrContent": "<scanned-qr-string>",
+    "reservationId": 1
+  }
+  ```
+- **Response:** Boolean true/false indicating if QR is valid
+- **Use Case:** HOST scans driver's QR code at parking entry to verify reservation
+
+---
+
+## Payment Endpoints
+
+### Initiate Payment
+- **Endpoint:** `POST /payments/initiate/{reservationId}`
+- **Auth Required:** YES
+- **Allowed Roles:** DRIVER
+- **Path Parameter:** `reservationId` = reservation ID
+- **Response:** Payment URL (Flutterwave checkout link)
+- **Use Case:** DRIVER initiates payment for their reservation
+
+### Payment Webhook (Flutterwave)
+- **Endpoint:** `POST /payments/webhook`
+- **Auth Required:** NO (secured via signature verification)
+- **Body:** Flutterwave webhook event
+- **Response:** 200 OK
+- **Use Case:** Flutterwave calls this endpoint to confirm payment status
+
+---
+
+## Event Management Endpoints
+
+### Create Event
+- **Endpoint:** `POST /events`
+- **Auth Required:** YES
+- **Allowed Roles:** ADMIN
+- **Response:** Created event with the number of activated parking spaces
+- **Use Case:** Admin creates a concert, festival, or other temporary event
+
+### Get Active Events
+- **Endpoint:** `GET /events/active?page=0&size=10`
+- **Auth Required:** NO
+- **Response:** Paginated list of events currently in progress
+- **Use Case:** Show active events on the map or in the frontend
+
+### Deactivate Event
+- **Endpoint:** `DELETE /events/{id}/deactivate`
+- **Auth Required:** YES
+- **Allowed Roles:** ADMIN
+- **Response:** 204 No Content
+- **Use Case:** End an event and reset linked parking spaces
+
+---
+
+## QR Code Endpoints
+
+### Generate QR Code
+- **Endpoint:** `GET /api/qr/generate?reservationId=1&userId=2`
+- **Auth Required:** YES
+- **Allowed Roles:** Any authenticated user
+- **Response:** PNG image
+- **Use Case:** Render a QR code for check-in
+
+### Verify QR Code
+- **Endpoint:** `POST /api/qr/verify`
+- **Auth Required:** YES
+- **Allowed Roles:** HOST or ADMIN
+- **Response:** Boolean validity result
+- **Use Case:** Verify a reservation at entry
+
+---
+
+## Payment Endpoints
+
+### Initiate Payment
+- **Endpoint:** `POST /payments/initiate/{reservationId}`
+- **Auth Required:** YES
+- **Allowed Roles:** DRIVER
+- **Response:** Flutterwave payment URL
+- **Use Case:** Start reservation payment
+
+### Payment Webhook
+- **Endpoint:** `POST /payments/webhook`
+- **Auth Required:** NO (verified by `verif-hash`)
+- **Response:** 200 OK when the webhook is valid
+- **Use Case:** Flutterwave confirms a successful payment
 
 ---
 
@@ -179,13 +390,17 @@ An owner-parking relationship was added:
 
 | Category | Endpoints Added |
 |----------|-----------------|
-| **Auth** | 1 (GET /api/auth/me) |
-| **Reservations** | 4 (my, get detail, cancel, active) |
-| **Parking** | 5 (register, my list, detail, update, delete) |
+| **Auth** | 3 (me, refresh, logout) |
+| **Reservations** | 8 (create, my, detail, cancel, check-in, checkout, overtime, active) |
+| **Parking (Public)** | 4 (list all, detail, nearby, by event) |
+| **Parking (HOST)** | 4 (register, my list, update, delete) |
+| **Events** | 3 (create, get active, deactivate) |
+| **QR Code** | 2 (generate, verify) |
+| **Payment** | 2 (initiate, webhook) |
 | **Admin** | 1 (dashboard) |
-| **Notifications** | 1 (SMS trigger) |
+| **Notifications** | 2 (SMS trigger, USSD) |
 | **USSD** | Already existed, SMS endpoint added |
-| **Total** | 13 new endpoints |
+| **Total** | 29 endpoints |
 
 ---
 
@@ -194,24 +409,30 @@ An owner-parking relationship was added:
 1. **Register:** `POST /api/auth/register` with fullName, email, phone, password, role
 2. **Login/Get Token:** `POST /api/auth/login` with email and password
 3. **Click Authorize:** Use the Bearer token in Swagger
-4. **Test endpoints:** All authenticated endpoints become available
+4. **Refresh if needed:** `POST /api/auth/refresh` with the refresh token from login
+5. **Logout when done:** `POST /api/auth/logout` to revoke the refresh token
+6. **Test endpoints:** All authenticated endpoints become available
 
 For HOST testing:
 - Register with `"role": "HOST"`
-- Register a parking space with `POST /api/parking`
-- View your spaces with `GET /api/parking/mine`
+- Register a parking space with `POST /parking-spaces`
+- View your spaces with `GET /parking-spaces/mine?page=0&size=10`
+- Update with `PUT /parking-spaces/{id}`
 
 For DRIVER testing:
 - Register with `"role": "DRIVER"` (default)
 - Create a reservation with `POST /reservations`
-- View your reservations with `GET /reservations/my`
+- View your reservations with `GET /reservations/my?page=0&size=10`
 - Cancel with `PATCH /reservations/{id}/cancel`
+- Check in with `POST /reservations/{id}/check-in`
+- Check out with `POST /reservations/{id}/checkout`
 
 For HOST to see active:
 - Use the HOST account token
-- Call `GET /reservations/active` to see who's parked now
+- Call `GET /reservations/active?page=0&size=10` to see who's parked now
 
 For ADMIN:
 - Register with `"role": "ADMIN"`
+- Create/deactivate events with `POST /events` and `DELETE /events/{id}/deactivate`
 - View dashboard with `GET /api/admin/dashboard`
 - Send SMS with `POST /api/ussd/sms`

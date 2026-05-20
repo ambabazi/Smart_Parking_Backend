@@ -2,6 +2,7 @@ package com.smart.parking.notification;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -26,6 +27,7 @@ public class NotificationService {
      * Send a booking confirmation SMS.
      * Call this from ReservationService after a booking is created.
      */
+    @Async("smartParkingTaskExecutor")
     public void sendBookingConfirmation(String phone, String parkingName,
                                         String startTime, int slots) {
         String msg = String.format(
@@ -40,6 +42,7 @@ public class NotificationService {
     /**
      * Notify driver that time is almost up (overtime warning).
      */
+    @Async("smartParkingTaskExecutor")
     public void sendOvertimeWarning(String phone, String parkingName) {
         String msg = String.format(
             "SmartPark: Your reservation at %s expires in 15 minutes.\n" +
@@ -50,6 +53,7 @@ public class NotificationService {
     /**
      * Notify driver of overtime charges.
      */
+    @Async("smartParkingTaskExecutor")
     public void sendOvertimeCharge(String phone, String parkingName, double amount) {
         String msg = String.format(
             "SmartPark: Overtime at %s.\n" +
@@ -61,6 +65,7 @@ public class NotificationService {
     /**
      * Notify host that a driver has booked their space.
      */
+    @Async("smartParkingTaskExecutor")
     public void notifyHost(String hostPhone, String driverName, int slots) {
         String msg = String.format(
             "SmartPark: %s booked %d slot(s) at your parking space.",
@@ -68,6 +73,7 @@ public class NotificationService {
         sendSms(hostPhone, msg);
     }
 
+    @Async("smartParkingTaskExecutor")
     public void sendSms(String phone, String message) {
         // MVP: Log SMS. Production: integrate Africa's Talking SDK or REST API
         log.info("[SMS via {}] To: {} | Message: {}", senderId, phone, message);

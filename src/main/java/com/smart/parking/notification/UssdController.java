@@ -1,13 +1,14 @@
 package com.smart.parking.notification;
 
 import com.smart.parking.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 
 /**
  * USSD Controller — handles Africa's Talking USSD callbacks.
@@ -23,10 +24,10 @@ import java.util.Map;
 @RequestMapping("/api/ussd")
 @RequiredArgsConstructor
 @Slf4j
+@Validated
 public class UssdController {
 
     private final NotificationService notificationService;
-
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
                  produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> handleUssd(
@@ -83,21 +84,10 @@ public class UssdController {
 
     @PostMapping("/sms")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ApiResponse<Map<String, String>>> sendSms(
-            @RequestBody Map<String, String> request) {
-        String phoneNumber = request.get("phoneNumber");
-        String message = request.get("message");
-
-        if (phoneNumber == null || message == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("phoneNumber and message are required"));
-        }
-
+    public ResponseEntity<ApiResponse<SmsRequest>> sendSms(@Valid @RequestBody SmsRequest request) {
         try {
-            notificationService.sendSms(phoneNumber, message);
-            return ResponseEntity.ok(
-                    ApiResponse.success("SMS sent successfully",
-                            Map.of("phone", phoneNumber, "status", "sent")));
+            notificationService.sendSms(request.getPhoneNumber(), request.getMessage());
+            return ResponseEntity.ok(ApiResponse.success("SMS sent successfully", request));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("We couldn’t send the SMS right now. Please try again."));

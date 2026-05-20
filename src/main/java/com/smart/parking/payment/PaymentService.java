@@ -1,5 +1,6 @@
 package com.smart.parking.payment;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smart.parking.reservation.Reservation;
 import com.smart.parking.reservation.ReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ public class PaymentService {
     private final RestTemplate restTemplate;
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.flutterwave.secret.key:}")
     private String flwSecretKey;
@@ -32,7 +35,7 @@ public class PaymentService {
 
     // 1. Generate Payment Link [cite: 439, 440, 441, 455, 461]
     public String initiatePayment(Reservation res) {
-                BigDecimal totalAmount = BigDecimal.valueOf(res.getParkingSpace().getPricePerSlot())
+        BigDecimal totalAmount = BigDecimal.valueOf(res.getParkingSpace().getPricePerSlot())
                 .multiply(BigDecimal.valueOf(res.getSlotCount()));
 
         Map<String, Object> payload = Map.of(
@@ -62,7 +65,6 @@ public class PaymentService {
                 (Class<Map<String, Object>>) (Class<?>) Map.class
         );
 
-        // Extract the payment link from the Flutterwave response
         Map<String, Object> responseBody = response.getBody();
         if (responseBody != null && responseBody.containsKey("data")) {
             Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
@@ -72,19 +74,18 @@ public class PaymentService {
     }
 
     // 2. Process Webhook Callback [cite: 466, 475, 476, 477, 478]
+    @Transactional
     public void processWebhook(FlutterwaveEvent event) {
         if ("successful".equals(event.getData().getStatus())) {
-            String txRef = event.getData().getTxRef(); // Example: "KP-123"
+            String txRef = event.getData().getTxRef();
             Long reservationId = Long.parseLong(txRef.replace("KP-", ""));
 
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
-            // Mark reservation as paid
             reservation.setPaid(true);
             reservationRepository.save(reservation);
 
-            // Record the payment
             Payment payment = Payment.builder()
                     .reservation(reservation)
                     .amount(BigDecimal.valueOf(event.getData().getAmount()))
@@ -94,4 +95,13 @@ public class PaymentService {
             paymentRepository.save(payment);
         }
     }
+
+        @Transactional(readOnly = true)
+        public PaymentStatusDTO getPaymentStatus(Long reservationId) {
+                var opt = paymentRepository.findByReservationId(reservationId);
+                if (opt.isEmpty()) return null;
+                Payment p = opt.get();
+                java.time.LocalDateTime processedAt = p.getReservation() != null ? p.getReservation().getCreatedAt() : null;
+                return new PaymentStatusDTO(p.getStatus(), p.getAmount(), p.getTransactionId(), processedAt);
+        }
 }

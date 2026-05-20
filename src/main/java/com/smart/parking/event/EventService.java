@@ -1,16 +1,14 @@
 package com.smart.parking.event;
 
-import com.smart.parking.parking.ParkingSpaceRepository;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-
 import com.smart.parking.parking.ParkingSpace;
-
-
+import com.smart.parking.parking.ParkingSpaceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-
-
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,15 +20,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EventService {
 
-    private final EventRepository        eventRepo;
+    private final EventRepository eventRepo;
     private final ParkingSpaceRepository spaceRepo;
-    private final SimpMessagingTemplate webSocket;
+    private final EventBroadcastService broadcastService;
 
     // ── POST /events ──────────────────────────────────────────────
+    @CacheEvict(cacheNames = {"activeEvents", "parkingSpacesByEvent", "parkingSpacesNearby", "parkingSpaces"}, allEntries = true)
     @Transactional
     public EventResponse createEvent(EventRequest req) {
 
-        // 1 — save the event and capture the returned entity with its ID
         Event event = eventRepo.save(Event.builder()
                 .name(req.name())
                 .latitude(req.latitude())
@@ -41,42 +39,38 @@ public class EventService {
                 .activatedSpaces(new ArrayList<>())
                 .build());
 
-        // 2 — find all parking spaces within the event radius
         List<ParkingSpace> nearby = spaceRepo.findWithinRadius(
                 req.latitude(), req.longitude(), req.radiusMetres());
 
-        // 3 — activate each nearby space
         nearby.forEach(space -> {
             space.setEventEnabled(true);
             space.setCurrentEvent(event);
         });
         spaceRepo.saveAll(nearby);
 
-        // 4 — broadcast to all connected map viewers
-        webSocket.convertAndSend("/topic/events",
-                new EventUpdateMessage(
-                        event.getId(),
-                        event.getName(),
-                        event.getLatitude(),
-                        event.getLongitude(),
-                        event.getRadiusMetres(),
-                        true
-                ));
+        broadcastService.publishEventUpdate(new EventUpdateMessage(
+                event.getId(),
+                event.getName(),
+                event.getLatitude(),
+                event.getLongitude(),
+                event.getRadiusMetres(),
+                true
+        ));
 
         return toResponse(event, nearby.size());
     }
 
     // ── GET /events/active ────────────────────────────────────────
-    public List<EventResponse> getActiveEvents() {
+    @Cacheable(cacheNames = "activeEvents", key = "#pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<EventResponse> getActiveEvents(Pageable pageable) {
         LocalDateTime now = LocalDateTime.now();
         return eventRepo
-                .findByStartTimeBeforeAndEndTimeAfter(now, now)
-                .stream()
-                .map(e -> toResponse(e, e.getActivatedSpaces().size()))
-                .toList();
+                .findByStartTimeBeforeAndEndTimeAfterAndActiveTrue(now, now, pageable)
+                .map(e -> toResponse(e, e.getActivatedSpaces().size()));
     }
 
     // ── DELETE /events/{id}/deactivate ────────────────────────────
+    @CacheEvict(cacheNames = {"activeEvents", "parkingSpacesByEvent", "parkingSpacesNearby", "parkingSpaces"}, allEntries = true)
     @Transactional
     public void deactivateEvent(Long eventId) {
 
@@ -84,7 +78,6 @@ public class EventService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Event not found"));
 
-        // reset all linked parking spaces
         List<ParkingSpace> spaces = spaceRepo.findByCurrentEventId(eventId);
         spaces.forEach(space -> {
             space.setEventEnabled(false);
@@ -92,20 +85,17 @@ public class EventService {
         });
         spaceRepo.saveAll(spaces);
 
-        // mark event as no longer active
         event.setActive(false);
         eventRepo.save(event);
 
-        // broadcast deactivation — FE removes the circle from the map
-        webSocket.convertAndSend("/topic/events",
-                new EventUpdateMessage(
-                        eventId,
-                        event.getName(),
-                        event.getLatitude(),
-                        event.getLongitude(),
-                        event.getRadiusMetres(),
-                        false
-                ));
+        broadcastService.publishEventUpdate(new EventUpdateMessage(
+                eventId,
+                event.getName(),
+                event.getLatitude(),
+                event.getLongitude(),
+                event.getRadiusMetres(),
+                false
+        ));
     }
 
     // ── used by scheduler ─────────────────────────────────────────

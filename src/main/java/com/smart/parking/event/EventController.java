@@ -2,19 +2,22 @@ package com.smart.parking.event;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RestController;
-
-
-
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/events")
 @RequiredArgsConstructor
+@Validated
 public class EventController {
 
     private final EventService eventService;
@@ -30,8 +33,10 @@ public class EventController {
 
     // GET /events/active — public
     @GetMapping("/active")
-    public List<EventResponse> getActive() {
-        return eventService.getActiveEvents();
+    public ResponseEntity<Page<EventResponse>> getActive(@PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(30, TimeUnit.SECONDS).cachePublic())
+                .body(eventService.getActiveEvents(pageable));
     }
 
     // DELETE /events/{id}/deactivate — admin only

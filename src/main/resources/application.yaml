@@ -6,18 +6,28 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
+        generate_statistics: true
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 200
   flyway:
     enabled: true
     locations: classpath:db/migration
-
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
   task:
     scheduling:
       pool:
@@ -27,37 +37,34 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 jwt:
   secret: ${JWT_SECRET:secret}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION:900000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
 
 app:
+  frontend:
+    url: ${APP_FRONTEND_URL:http://localhost:3000}
   flutterwave:
     public:
       key: ${FLUTTERWAVE_PUBLIC_KEY:}
     secret:
       key: ${FLUTTERWAVE_SECRET_KEY:}
       hash: ${FLUTTERWAVE_SECRET_HASH:}
-    encryption:
+  performance:
+    slow-request-threshold-ms: ${SLOW_REQUEST_THRESHOLD_MS:500}
 
-      jpa:
-        hibernate:
-          ddl-auto: validate
-
-      flyway:
-        enabled: true
-        locations: classpath:db/migration
-
-    jwt:
-      secret: ${JWT_SECRET:secret}
-      expiration: ${JWT_EXPIRATION:86400000}
+springdoc:
+  api-docs:
     path: /api-docs
-    enabled: true
   swagger-ui:
     enabled: true
     path: /swagger-ui.html

@@ -2,16 +2,20 @@ package com.smart.parking.reservation;
 
 import com.smart.parking.auth.User;
 import com.smart.parking.auth.UserRepository;
+import com.smart.parking.notification.NotificationService;
 import com.smart.parking.parking.ParkingSpace;
 import com.smart.parking.parking.ParkingSpaceRepository;
-import com.smart.parking.qr.QrService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -21,49 +25,53 @@ public class ReservationService {
     private final ReservationRepository reservationRepo;
     private final ParkingSpaceRepository spaceRepo;
     private final UserRepository userRepo;
-    private final QrService qrService;
+    private final NotificationService notificationService;
 
-    @Transactional // Critical: Wraps the check + save atomically
+    @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats", "parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner"}, allEntries = true)
+    @Transactional
     public Reservation createReservation(BookingRequest req, String userEmail) throws Exception {
+
+        if (req.getEndTime().isBefore(req.getStartTime()) || req.getEndTime().isEqual(req.getStartTime())) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
 
         User user = userRepo.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Fetch parking space
         ParkingSpace space = spaceRepo.findById(req.getParkingSpaceId())
                 .orElseThrow(() -> new IllegalArgumentException("Space not found"));
 
-        int slotsRequested = req.getSlotCount(); // 1 to 5 [cite: 382]
+        int slotsRequested = req.getSlotCount();
 
         if (space.getAvailableSlots() < slotsRequested) {
             throw new IllegalStateException("Only " + space.getAvailableSlots() + " slots left");
         }
 
-        // Deduct slots atomically [cite: 386]
         space.setAvailableSlots(space.getAvailableSlots() - slotsRequested);
         spaceRepo.save(space);
 
-        // Generate the unique QR Token [cite: 109, 110, 111]
         String qrToken = UUID.randomUUID().toString();
         BigDecimal totalAmount = BigDecimal.valueOf(space.getPricePerSlot())
             .multiply(BigDecimal.valueOf(slotsRequested));
 
-        // Build the reservation [cite: 389, 390, 391, 392, 393, 394, 395, 396]
         Reservation res = Reservation.builder()
                 .user(user)
                 .parkingSpace(space)
                 .slotCount(slotsRequested)
-            .totalAmount(totalAmount)
+                .totalAmount(totalAmount)
                 .qrCode(qrToken)
                 .startTime(req.getStartTime())
                 .endTime(req.getEndTime())
-                .paid(false) // Will be updated by Flutterwave later
+                .paid(false)
                 .verified(false)
                 .build();
 
-        return reservationRepo.save(res);
+        Reservation saved = reservationRepo.save(res);
+        notificationService.sendBookingConfirmation(user.getPhone(), space.getName(), req.getStartTime().toString(), slotsRequested);
+        return saved;
     }
 
+    @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats", "parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner"}, allEntries = true)
     @Transactional
     public Reservation cancelReservation(Long reservationId, String userEmail) throws Exception {
         Reservation res = reservationRepo.findById(reservationId)
@@ -73,17 +81,16 @@ public class ReservationService {
             throw new IllegalArgumentException("You can only cancel your own reservations");
         }
 
-        // Return slots to the parking space
         ParkingSpace space = res.getParkingSpace();
         space.setAvailableSlots(space.getAvailableSlots() + res.getSlotCount());
         spaceRepo.save(space);
 
-        // Mark reservation as verified:false (cancelled state)
         res.setVerified(false);
 
         return reservationRepo.save(res);
     }
 
+    @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
     public Reservation checkIn(Long reservationId, String userEmail) throws Exception {
         Reservation res = reservationRepo.findById(reservationId)
@@ -106,6 +113,7 @@ public class ReservationService {
         return reservationRepo.save(res);
     }
 
+    @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
     public CheckoutResponse checkout(Long reservationId, String userEmail) throws Exception {
         Reservation res = reservationRepo.findById(reservationId)
@@ -123,7 +131,6 @@ public class ReservationService {
         res.setCheckedOutAt(now);
         res.setStatus("CHECKED_OUT");
 
-        // Calculate overtime
         Duration overstay = Duration.between(res.getEndTime(), now);
         long overtimeMinutes = overstay.toMinutes();
 
@@ -133,7 +140,6 @@ public class ReservationService {
         response.setBookedUntil(res.getEndTime());
 
         if (overtimeMinutes > 0) {
-            // Charge overtime: 10 RWF per minute
             BigDecimal overtimeCharge = BigDecimal.valueOf(overtimeMinutes * 10L);
             res.setOvertimeAmount(overtimeCharge);
             response.setHasOvertime(true);
@@ -144,7 +150,6 @@ public class ReservationService {
             return response;
         }
 
-        // No overtime
         res.setStatus("COMPLETED");
         response.setHasOvertime(false);
         response.setMessage("Checked out successfully.");
@@ -152,6 +157,7 @@ public class ReservationService {
         return response;
     }
 
+    @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
     public Reservation payOvertime(Long reservationId, String userEmail, BigDecimal amount) throws Exception {
         Reservation res = reservationRepo.findById(reservationId)
@@ -172,5 +178,58 @@ public class ReservationService {
         res.setOvertimeAmount(BigDecimal.ZERO);
         res.setStatus("COMPLETED");
         return reservationRepo.save(res);
+    }
+
+    public Page<Reservation> getMyReservations(String userEmail, Pageable pageable) {
+        return reservationRepo.findByUserEmail(userEmail, pageable);
+    }
+
+    public Page<Reservation> getActiveReservations(String ownerEmail, Pageable pageable) {
+        return reservationRepo.findActiveByOwnerEmail(ownerEmail, pageable);
+    }
+
+    // Availability check used by frontend before creating reservation
+    @Transactional(readOnly = true)
+    public AvailabilityResponse checkAvailability(Long parkingSpaceId, LocalDateTime startTime, LocalDateTime endTime, Integer requestedSlots) {
+        if (startTime.isAfter(endTime) || startTime.isEqual(endTime)) {
+            throw new IllegalArgumentException("Start time must be before end time");
+        }
+        if (startTime.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start time must be in the future");
+        }
+
+        ParkingSpace space = spaceRepo.findById(parkingSpaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Parking space not found"));
+
+        Integer occupied = reservationRepo.countOccupiedSlots(parkingSpaceId, startTime, endTime);
+        int available = space.getTotalSlots() - (occupied == null ? 0 : occupied);
+
+        boolean isAvailable = available >= (requestedSlots == null ? 1 : requestedSlots);
+
+        long hours = ChronoUnit.HOURS.between(startTime, endTime);
+        if (hours == 0) hours = 1;
+
+        double estimatedPrice = space.getPricePerSlot() * hours * (requestedSlots == null ? 1 : requestedSlots);
+
+        return new AvailabilityResponse(isAvailable, available, estimatedPrice, space.getPricePerSlot(), hours);
+    }
+
+    @Transactional(readOnly = true)
+    public CurrentReservationDTO getCurrentParking(String userEmail) {
+        var user = userRepo.findByEmail(userEmail).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        var opt = reservationRepo.findCurrentActiveReservation(user.getId());
+        if (opt.isEmpty()) return null;
+        Reservation r = opt.get();
+        long minutesRemaining = ChronoUnit.MINUTES.between(LocalDateTime.now(), r.getEndTime());
+        return new CurrentReservationDTO(
+                r.getId(),
+                r.getParkingSpace().getName(),
+                r.getParkingSpace().getAddress(),
+                r.getStartTime(),
+                r.getEndTime(),
+                r.getSlotCount(),
+                r.getStatus(),
+                minutesRemaining
+        );
     }
 }

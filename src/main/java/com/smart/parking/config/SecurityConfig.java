@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -55,6 +56,8 @@ public class SecurityConfig {
                     "/webjars/**",
                     "/error"
                 ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/parking-spaces/mine").authenticated()
+                .requestMatchers(HttpMethod.GET, "/parking-spaces", "/parking-spaces/", "/parking-spaces/nearby", "/parking-spaces/event/*", "/parking-spaces/*", "/events/active").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter,

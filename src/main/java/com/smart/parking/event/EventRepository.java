@@ -1,5 +1,7 @@
 package com.smart.parking.event;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +12,13 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Long> {
 
     // returns events where now is between startTime and endTime
-    List<Event> findByStartTimeBeforeAndEndTimeAfter(
+    Page<Event> findByStartTimeBeforeAndEndTimeAfterAndActiveTrue(
+            LocalDateTime now1,
+            LocalDateTime now2,
+            Pageable pageable
+    );
+
+    List<Event> findByStartTimeBeforeAndEndTimeAfterAndActiveTrue(
             LocalDateTime now1,
             LocalDateTime now2
     );

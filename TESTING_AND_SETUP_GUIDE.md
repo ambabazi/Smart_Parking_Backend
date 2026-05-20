@@ -1,6 +1,6 @@
 # Smart Parking End-to-End Testing and Setup Guide
 
-This guide shows how to test the full backend flow in Swagger, from registering as a driver or host to payment, QR verification, cancellation, notifications, and USSD. It also lists the environment variables you need so payment and notification integrations behave correctly.
+This guide shows how to test the full backend flow in Swagger, from registering as a driver or host to payment, QR verification, cancellation, notifications, refresh-token login sessions, and USSD. It also lists the environment variables you need so payment, cache, Redis, and notification integrations behave correctly.
 
 ## 1. What You Can Test
 
@@ -28,13 +28,18 @@ Required runtime variables from [src/main/resources/application.yaml](src/main/r
 - `FLUTTERWAVE_PUBLIC_KEY`
 - `FLUTTERWAVE_SECRET_KEY`
 - `FLUTTERWAVE_SECRET_HASH`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_PASSWORD`
+- `REDIS_DATABASE`
 - `FLUTTERWAVE_ENCRYPTION_KEY`
-- `FRONTEND_URL` if your frontend is not `http://localhost:3000`
+- `APP_FRONTEND_URL` if your frontend is not `http://localhost:3000`
 - `AT_USERNAME`
 - `AT_API_KEY`
 - `AT_SENDER_ID`
 - `AT_ENV`
-
+Refresh tokens are stored in Redis and rotated on `POST /api/auth/refresh`.
+- SMS sending is asynchronous and still logged by the backend unless you connect Africa's Talking
 Important notes:
 - Payment initiation uses `app.flutterwave.secret.key`.
 - Webhook verification uses `app.flutterwave.secret.hash` in the `verif-hash` header.
@@ -47,7 +52,9 @@ Important notes:
 2. Register a user with `POST /api/auth/register`.
 3. Log in with `POST /api/auth/login`.
 4. Copy the JWT from the response.
-5. Click `Authorize` in Swagger and paste the token as a Bearer token.
+5. Click `Authorize` in Swagger and paste the token a
+7. If the access token expires, call `POST /api/auth/refresh` with the refresh token from login to get a new pair.
+8. Call `POST /api/auth/logout` to revoke the refresh token when you want to sign out.s a Bearer token.
 6. Use `GET /api/auth/me` to confirm the token works.
 
 Example registration body:
@@ -77,7 +84,7 @@ Example driver registration body:
 Use a HOST account for these endpoints.
 
 ### Register a parking space
-- `POST /api/parking`
+- `POST /parking-spaces`
 - Body example:
 ```json
 {
@@ -91,18 +98,23 @@ Use a HOST account for these endpoints.
 ```
 
 ### View your spaces
-- `GET /api/parking/mine`
+- `GET /parking-spaces/mine?page=0&size=10`
 
 ### Update a space
-- `PUT /api/parking/{id}`
+- `PUT /parking-spaces/{id}`
 - Use the same body shape as registration.
 
 ### Delete a space
-- `DELETE /api/parking/{id}`
+- `DELETE /parking-spaces/{id}`
 
 ### View a public space detail
-- `GET /api/parking/{id}`
+- `GET /parking-spaces/{id}`
 - No auth is required for this one.
+
+### Nearby search and event-linked spaces
+- `GET /parking-spaces/nearby?lat=-1.9441&lng=30.0619&radius=5000&page=0&size=10`
+- `GET /parking-spaces/event/{eventId}?page=0&size=10`
+- Both are public and return paginated results.
 
 ## 5. DRIVER Flow: Search, Reserve, Pay, Cancel
 
@@ -121,13 +133,20 @@ Use a DRIVER account for booking endpoints.
 ```
 
 What should happen:
-- available slots are reduced
-- a reservation record is created
-- a QR code token is stored on the reservation
+- available slots are r?page=0&size=10`
 
-### View your reservations
-- `GET /reservations/my`
+### View one reservation
+- `GET /reservations/{id}`
 
+### Cancel a reservation
+- `PATCH /reservations/{id}/cancel`
+
+### Check in and out
+- `POST /reservations/{id}/check-in`
+- `POST /reservations/{id}/checkout`
+
+### Handle overtime
+- `POST /reservations/{id}/pay-overtime?amount=500
 ### View one reservation
 - `GET /reservations/{id}`
 
@@ -191,6 +210,10 @@ HOST and ADMIN users can check who is currently parked in their spaces.
 
 This returns only reservations that are currently active for the logged-in HOST's parking spaces.
 
+
+### Refresh and logout
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
 ## 8. Admin Dashboard and SMS Notifications
 
 ### Dashboard

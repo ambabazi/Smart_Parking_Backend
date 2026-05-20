@@ -87,11 +87,12 @@ Important files:
 What it does:
 - stores parking space data such as name, GPS coordinates, price, and free slots
 - supports nearby search using latitude and longitude
+- returns paginated public results and host-owned listings
 - can return a lightweight DTO instead of the full entity
 
 Important note:
-- `ParkingController.java` is currently empty
-- the service and repository exist, but there is no exposed REST endpoint in that controller yet
+- `ParkingController.java` now exposes public search endpoints and host management endpoints under `/parking-spaces`
+- results are cached and paginated to reduce repeated database work
 
 Why it exists:
 - the system needs a way to find parking spaces by location
@@ -170,11 +171,12 @@ Important files:
 What it does:
 - models parking events
 - can be linked to parking spaces
-- supports event-driven pricing or activation logic
+- supports event-driven activation logic
+- exposes public active-event browsing and admin creation/deactivation
 
 Important note:
-- `EventController.java` is currently empty
-- the entity and service exist, but the public REST side is not finished yet
+- event reads are cached and paginated
+- event changes automatically toggle nearby parking-space event state
 
 ### Admin
 Files in `src/main/java/com/smart/parking/admin`
@@ -184,10 +186,11 @@ Important files:
 - `AdminService.java`
 
 What it does:
-- represents administrator-level operations
+- serves dashboard metrics with caching
 
 Important note:
-- `AdminController.java` is currently empty
+- `AdminController.java` exposes the dashboard endpoint
+- the dashboard response is now cached briefly in Redi
 - this part looks like a placeholder for future admin features
 
 ### Notifications and USSD
@@ -200,6 +203,7 @@ Important files:
 
 What it does:
 - handles Africa's Talking USSD callbacks
+- sends SMS asynchronously and logs notifications while the real provider is not connected
 - provides a simple menu-driven booking path for phones that do not use the web app
 
 Why it exists:
@@ -387,20 +391,43 @@ What happens:
 These are the endpoints implemented in the code you can see:
 
 Public or mostly public:
-- `GET /`
-- `GET /ping`
+- `GET /parking-spaces`
+- `GET /parking-spaces/{id}`
+- `GET /parking-spaces/nearby`
+- `GET /parking-spaces/event/{eventId}`
+- `GET /events/active`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
 - `POST /api/ussd`
 - `POST /payments/webhook`
 
 Authenticated:
+- `POST /parking-spaces`
+- `GET /parking-spaces/mine`
+- `PUT /parking-spaces/{id}`
+- `DELETE /parking-spaces/{id}`
+- `POST /events`
+- `DELETE /events/{id}/deactivate`
 - `POST /reservations`
+- `GET /reservations/my`
+- `GET /reservations/{id}`
+- `PATCH /reservations/{id}/cancel`
+- `GET /reservations/active`
+- `POST /reservations/{id}/check-in`
+- `POST /reservations/{id}/checkout`
+- `POST /reservations/{id}/pay-overtime`
 - `POST /payments/initiate/{reservationId}`
 - `GET /api/qr/generate`
 - `POST /api/qr/verify`
+- `GET /api/admin/dashboard`
+- `POST /api/ussd/sms`
 
 Important note:
+- some routes are paginated and cached
+- refresh tokens are stored in Redis and rotated on refresh
+- async work is used for notifications and event broadcast
 - some controller classes exist but are empty
 - that means the codebase contains planned features that are not yet exposed as REST routes
 

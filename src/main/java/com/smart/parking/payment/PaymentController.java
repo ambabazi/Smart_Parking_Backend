@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -55,6 +56,28 @@ public class PaymentController {
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/status/{reservationId}")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> getPaymentStatus(
+            @PathVariable Long reservationId,
+            Authentication authentication) {
+        try {
+            // Verify reservation ownership
+            var reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            String email = authentication.getName();
+            if (!reservation.getUser().getEmail().equals(email)) {
+                return ResponseEntity.status(403).build();
+            }
+
+            var status = paymentService.getPaymentStatus(reservationId);
+            if (status == null) return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(status);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }

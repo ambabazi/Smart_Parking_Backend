@@ -182,7 +182,7 @@ psql 'postgres://user:password@host:5432/dbname'
 curl https://your-service-on-render.onrender.com/actuator/health
 ```
 
- - API test: Try a simple API endpoint (e.g., `/api/parking/nearby` depending on your routes).
+ - API test: Try a simple API endpoint (e.g., `/parking-spaces/nearby` depending on your routes).
 
 Notes
  - The repository's `Dockerfile` builds a Java 21 image and runs the JAR; Render's Docker runtime is the correct choice.

@@ -3,6 +3,7 @@ package com.smart.parking.admin;
 import com.smart.parking.parking.ParkingSpaceRepository;
 import com.smart.parking.reservation.ReservationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ public class AdminService {
     private final ParkingSpaceRepository parkingSpaceRepository;
     private final ReservationRepository reservationRepository;
 
+    @Cacheable(cacheNames = "dashboardStats", key = "'singleton'")
     public DashboardDTO getDashboardStats() {
         long totalSpaces = parkingSpaceRepository.count();
         Long totalSlots = parkingSpaceRepository.findAll().stream()
@@ -21,11 +23,11 @@ public class AdminService {
                 .sum();
         Long activeReservations = reservationRepository.countActiveReservations();
         Long bookingsToday = reservationRepository.countBookingsToday();
-        BigDecimal revenueToday = reservationRepository.revenueToday() != null 
+        BigDecimal revenueToday = reservationRepository.revenueToday() != null
                 ? reservationRepository.revenueToday()
                 : BigDecimal.ZERO;
 
-        double occupancyPercentage = totalSlots > 0 
+        double occupancyPercentage = totalSlots > 0
                 ? ((double) (totalSlots - getTotalAvailableSlots()) / totalSlots) * 100
                 : 0.0;
 

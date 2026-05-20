@@ -7,7 +7,10 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", indexes = {
+        @Index(name = "idx_payments_reservation_id", columnList = "reservation_id"),
+        @Index(name = "idx_payments_flutterwave_id", columnList = "flutterwave_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

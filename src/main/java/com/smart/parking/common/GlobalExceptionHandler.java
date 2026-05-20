@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice(basePackages = "com.smart.parking")
@@ -44,6 +45,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ApiResponse.error(safeMessage(ex.getMessage(), "Please review your input and try again.")));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        String errors = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getMessage())
+                .collect(Collectors.joining("; "));
+        return ResponseEntity.badRequest().body(ApiResponse.error(safeMessage(errors, "Please check the highlighted fields and try again.")));
     }
 
     @ExceptionHandler(IllegalStateException.class)

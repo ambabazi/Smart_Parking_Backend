@@ -9,8 +9,17 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reservations")
-@Data @Builder @NoArgsConstructor @AllArgsConstructor
+@Table(name = "reservations", indexes = {
+        @Index(name = "idx_reservations_user_id", columnList = "user_id"),
+        @Index(name = "idx_reservations_parking_space_id", columnList = "parking_space_id"),
+        @Index(name = "idx_reservations_status", columnList = "status"),
+        @Index(name = "idx_reservations_paid", columnList = "paid"),
+        @Index(name = "idx_reservations_created_at", columnList = "created_at")
+})
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Reservation {
 
     @Id

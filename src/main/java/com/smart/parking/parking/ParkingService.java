@@ -3,12 +3,14 @@ package com.smart.parking.parking;
 import com.smart.parking.auth.User;
 import com.smart.parking.auth.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,30 +19,40 @@ public class ParkingService {
     private final ParkingSpaceRepository spaceRepo;
     private final UserRepository userRepo;
 
-    public List<ParkingDTO> findNearby(Double lat, Double lng, Double radiusMetres) {
-        List<ParkingSpace> spaces = spaceRepo.findWithinRadius(lat, lng, radiusMetres);
+    @Cacheable(cacheNames = "parkingSpacesNearby", key = "'nearby:' + #lat + ':' + #lng + ':' + #radiusMetres + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<ParkingDTO> findNearby(Double lat, Double lng, Double radiusMetres, Pageable pageable) {
+        Page<ParkingSpace> spaces = spaceRepo.findWithinRadius(lat, lng, radiusMetres, pageable);
 
         if (spaces.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "No parking spaces found within " + radiusMetres + " metres");
         }
-        return spaces.stream().map(this::toDTO).toList();
+        return spaces.map(this::toDTO);
     }
 
+    @Cacheable(cacheNames = "parkingSpaces", key = "'id:' + #id")
     public ParkingDTO getById(Long id) {
         return spaceRepo.findById(id)
                 .map(this::toDTO)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking space not found"));
     }
 
-    public List<ParkingDTO> getAll() {
-        return spaceRepo.findAll().stream().map(this::toDTO).toList();
+    @Cacheable(cacheNames = "parkingSpaces", key = "'all:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<ParkingDTO> getAll(Pageable pageable) {
+        return spaceRepo.findAll(pageable).map(this::toDTO);
     }
 
-    public List<ParkingDTO> getSpacesByEvent(Long eventId) {
-        return spaceRepo.findByCurrentEventId(eventId).stream().map(this::toDTO).toList();
+    @Cacheable(cacheNames = "parkingSpacesByEvent", key = "'event:' + #eventId + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<ParkingDTO> getSpacesByEvent(Long eventId, Pageable pageable) {
+        return spaceRepo.findByCurrentEventId(eventId, pageable).map(this::toDTO);
     }
 
+    @Cacheable(cacheNames = "parkingSpacesByOwner", key = "'owner:' + #ownerEmail + ':' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<ParkingSpace> getMyParkingSpaces(String ownerEmail, Pageable pageable) {
+        return spaceRepo.findByOwnerEmail(ownerEmail, pageable);
+    }
+
+    @CacheEvict(cacheNames = {"parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner", "dashboardStats"}, allEntries = true)
     @Transactional
     public ParkingSpace createParkingSpace(ParkingSpaceCreateDTO dto, String ownerEmail) {
         User owner = userRepo.findByEmail(ownerEmail)
@@ -61,6 +73,7 @@ public class ParkingService {
         return spaceRepo.save(space);
     }
 
+    @CacheEvict(cacheNames = {"parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner", "dashboardStats"}, allEntries = true)
     @Transactional
     public ParkingSpace updateParkingSpace(Long id, ParkingSpaceCreateDTO dto, String ownerEmail) {
         ParkingSpace space = spaceRepo.findById(id)
@@ -80,6 +93,7 @@ public class ParkingService {
         return spaceRepo.save(space);
     }
 
+    @CacheEvict(cacheNames = {"parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner", "dashboardStats"}, allEntries = true)
     @Transactional
     public void deleteParkingSpace(Long id, String ownerEmail) {
         ParkingSpace space = spaceRepo.findById(id)
