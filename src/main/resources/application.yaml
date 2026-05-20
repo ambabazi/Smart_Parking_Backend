@@ -1,24 +1,42 @@
 spring:
   application:
     name: Smart_Parking
-
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:testdb}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/smartparking}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
 
-app:
-  jwt:
-    secret: ${JWT_SECRET:secret}
+  task:
+    scheduling:
+      pool:
+        size: 2
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  secret: ${JWT_SECRET:secret}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+app:
   flutterwave:
     public:
       key: ${FLUTTERWAVE_PUBLIC_KEY:}
@@ -26,24 +44,28 @@ app:
       key: ${FLUTTERWAVE_SECRET_KEY:}
       hash: ${FLUTTERWAVE_SECRET_HASH:}
     encryption:
-      key: ${FLUTTERWAVE_ENCRYPTION_KEY:}
 
-  frontend:
-    url: ${FRONTEND_URL:https://smart-parking-frontend.vercel.app}
+      jpa:
+        hibernate:
+          ddl-auto: validate
+
+      flyway:
+        enabled: true
+        locations: classpath:db/migration
+
+    jwt:
+      secret: ${JWT_SECRET:secret}
+      expiration: ${JWT_EXPIRATION:86400000}
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    url: /api-docs
+    disable-swagger-default-url: true
 
 server:
-  port: 8081
-
-  tomcat:
-    accesslog:
-      enabled: true
-      pattern: "%h %l %u %t \"%r\" %s %b"
-
-logging:
-  level:
-    org.apache.catalina: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
+  port: 8080
 
 scheduler:
   event-deactivation:

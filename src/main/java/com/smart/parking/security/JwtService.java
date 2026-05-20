@@ -1,14 +1,15 @@
 package com.smart.parking.security;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,27 +31,29 @@ public class JwtService {
         // Include role in token so FE can read it
         claims.put("role", userDetails.getAuthorities()
                 .iterator().next().getAuthority());
+        Instant now = Instant.now();
+        Instant expiryTime = now.plusMillis(expirationMs);
         return Jwts.builder()
-            .setClaims(claims)
-            .setSubject(userDetails.getUsername())
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-            .signWith(getKey(), SignatureAlgorithm.HS256)
-                .compact();
+            .claims(claims)
+            .subject(userDetails.getUsername())
+            .issuedAt(java.util.Date.from(now))
+            .expiration(java.util.Date.from(expiryTime))
+            .signWith(getKey())
+            .compact();
     }
 
     public String extractUsername(String token) {
-        return Jwts.parserBuilder().setSigningKey(getKey()).build()
-            .parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parser().verifyWith(getKey()).build()
+            .parseSignedClaims(token).getPayload().getSubject();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         try {
-                String username = extractUsername(token);
-                Date expiry = Jwts.parserBuilder().setSigningKey(getKey()).build()
-                    .parseClaimsJws(token).getBody().getExpiration();
+            String username = extractUsername(token);
+            Claims claims = Jwts.parser().verifyWith(getKey()).build()
+                .parseSignedClaims(token).getPayload();
             return username.equals(userDetails.getUsername())
-                    && expiry.after(new Date());
+                    && !claims.getExpiration().before(new java.util.Date());
         } catch (JwtException e) {
             return false;
         }

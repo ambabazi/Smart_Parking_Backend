@@ -10,7 +10,7 @@ This document summarizes the complete **BE1 Sprint** implementation for Smart Pa
 
 ### ✅ Sprint 1: Setup & Database
 - [x] **pom.xml** — Updated with all required dependencies (JWT, QR, WebFlux, Swagger, Flyway)
-- [x] **application.properties** — Environment-based configuration with Africa's Talking + JWT
+- [x] **application.yaml** and **application-prod.yaml** — Environment-based configuration with PostgreSQL, Swagger, Africa's Talking, and JWT
 - [x] **.env & .env.local** — Secure configuration templates (never commit real secrets)
 - [x] **V1__init_schema.sql** — Complete Kigali database schema (users, parking_spaces, reservations, payments, events)
 - [x] **V2__insert_demo_data.sql** — Seed data with 5 real Kigali parking spaces + admin user
@@ -100,7 +100,7 @@ curl http://localhost:8080/actuator/health
 ### Step 5: Access Swagger UI
 Open in browser:
 ```
-http://localhost:8080/swagger-ui.html
+http://localhost:8080/swagger-ui/index.html
 ```
 
 ---
@@ -119,7 +119,7 @@ Run these before every deployment:
 | 6 | Authorize in Swagger | - | Lock icon closed | ⬜ |
 | 7 | /api/qr/generate (with token) | GET | 200, PNG image | ⬜ |
 | 8 | /api/qr/verify (HOST) | POST | 200, QR valid | ⬜ |
-| 9 | /swagger-ui.html | GET | 200, loads fully | ⬜ |
+| 9 | /swagger-ui/index.html | GET | 200, loads fully | ⬜ |
 | 10 | /api-docs | GET | 200, JSON spec | ⬜ |
 
 ### Test Register & Login Flow
@@ -267,7 +267,7 @@ PORT=8080
 curl https://your-url.up.railway.app/actuator/health
 
 # Open Swagger:
-https://your-url.up.railway.app/swagger-ui.html
+https://your-url.up.railway.app/swagger-ui/index.html
 ```
 
 ### Step 6: Keep Railway Alive
@@ -337,7 +337,7 @@ BE2 will:
 # Kill process on port 8080
 lsof -ti:8080 | xargs kill -9
 
-# Or change port in application.properties
+# Or change port in application.yaml
 server.port=9090
 ```
 

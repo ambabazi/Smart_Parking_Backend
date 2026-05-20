@@ -16,7 +16,9 @@ public class CheckoutResponse {
     private Long reservationId;
     private LocalDateTime checkedOutAt;
     private LocalDateTime bookedUntil;
+    @Builder.Default
     private Boolean hasOvertime = false;
+    @Builder.Default
     private Long overtimeMinutes = 0L;
     private BigDecimal overtimeAmount;
     private String message;

@@ -494,7 +494,7 @@ console.log("Full token string:", token);
 ✅ **CORS Origins**: Only allows Vercel domain (not wildcard)  
 ✅ **Credentials**: `allowCredentials(true)` for JWT tokens  
 ✅ **HTTPS Only**: Render backend is HTTPS by default  
-✅ **No Hardcoded Secrets**: Check `application.properties` uses `${VAR_NAME}`
+✅ **No Hardcoded Secrets**: Check `application.yaml` and `application-prod.yaml` use `${VAR_NAME}`
 
 ---
 

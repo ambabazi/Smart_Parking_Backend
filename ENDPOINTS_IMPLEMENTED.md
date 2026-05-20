@@ -1,6 +1,6 @@
 # Smart Parking - Newly Implemented Endpoints
 
-This document lists all the endpoints added to complete the MVP. These are now available in Swagger.
+This document lists all the endpoints added to complete the MVP. These are available in Swagger UI and the OpenAPI spec at `/api-docs`.
 
 ## Authentication Endpoints
 

@@ -17,10 +17,10 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         jwtService = new JwtService();
-        // Use reflection to set the secret and expiration from environment variables when available.
+        // Use a strong fallback secret so JJWT key-size validation passes in all environments.
         String secret = System.getenv("JWT_SECRET");
-        if (secret == null || secret.isEmpty()) {
-            secret = "test-secret"; // short fallback used only for local tests
+        if (secret == null || secret.length() < 32) {
+            secret = "test-secret-key-must-be-at-least-32-bytes-long";
         }
         ReflectionTestUtils.setField(jwtService, "secret", secret);
 

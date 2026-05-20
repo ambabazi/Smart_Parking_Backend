@@ -15,9 +15,9 @@ public class DatabaseConfig {
     @Bean
     @Primary
     public DataSource dataSource(
-            @Value("${DB_URL:}") String dbUrl,
-            @Value("${DB_USERNAME:}") String dbUser,
-            @Value("${DB_PASSWORD:}") String dbPass,
+            @Value("${DB_URL:${spring.datasource.url:}}") String dbUrl,
+            @Value("${DB_USERNAME:${spring.datasource.username:}}") String dbUser,
+            @Value("${DB_PASSWORD:${spring.datasource.password:}}") String dbPass,
             @Value("${DATABASE_URL:}") String databaseUrl
     ) {
         String jdbcUrl = (dbUrl == null || dbUrl.isBlank()) ? null : dbUrl.trim();

@@ -260,7 +260,7 @@ That means:
 - a valid `.env` file or exported environment variables
 
 ### Runtime configuration
-The application reads configuration from environment variables.
+The application reads configuration from environment variables and the YAML files under `src/main/resources/`.
 
 Important variables:
 - `DB_URL`
@@ -269,7 +269,7 @@ Important variables:
 - `JWT_SECRET`
 - `PORT`
 
-The YAML file defaults to PostgreSQL or H2 depending on environment variables, and the local setup in this workspace typically overrides the port and database values.
+The backend defaults to PostgreSQL through environment variables, and the local setup in this workspace typically overrides the port and database values.
 
 ### Start the app
 If using Maven directly:
@@ -289,10 +289,10 @@ mvn spring-boot:run
 After startup, open Swagger UI in the browser and use it to explore the API.
 
 Depending on the runtime port, the base URL will usually be one of:
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8081/swagger-ui.html`
+- `http://localhost:8080/swagger-ui/index.html`
+- `http://localhost:8081/swagger-ui/index.html`
 
-The root path also redirects to Swagger through `HealthController`.
+The root path also redirects to Swagger through `HealthController`, and the Swagger UI is configured to load `/api-docs`.
 
 ### Quick health check
 - `GET /ping` returns `pong`

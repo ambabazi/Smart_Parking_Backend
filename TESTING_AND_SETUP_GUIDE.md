@@ -20,7 +20,7 @@ The current backend supports these flows:
 
 Make sure the app is running with the correct database and integration settings.
 
-Required runtime variables from [src/main/resources/application.properties](src/main/resources/application.properties) and [src/main/resources/application.yaml](src/main/resources/application.yaml):
+Required runtime variables from [src/main/resources/application.yaml](src/main/resources/application.yaml) and [src/main/resources/application-prod.yaml](src/main/resources/application-prod.yaml):
 - `DB_URL`
 - `DB_USERNAME`
 - `DB_PASSWORD`
@@ -29,7 +29,7 @@ Required runtime variables from [src/main/resources/application.properties](src/
 - `FLUTTERWAVE_SECRET_KEY`
 - `FLUTTERWAVE_SECRET_HASH`
 - `FLUTTERWAVE_ENCRYPTION_KEY`
-- `APP_FRONTEND_URL` if your frontend is not `http://localhost:3000`
+- `FRONTEND_URL` if your frontend is not `http://localhost:3000`
 - `AT_USERNAME`
 - `AT_API_KEY`
 - `AT_SENDER_ID`
@@ -43,7 +43,7 @@ Important notes:
 
 ## 3. Swagger Login Flow
 
-1. Open Swagger UI.
+1. Open Swagger UI at `http://localhost:8080/swagger-ui/index.html`.
 2. Register a user with `POST /api/auth/register`.
 3. Log in with `POST /api/auth/login`.
 4. Copy the JWT from the response.

@@ -54,17 +54,19 @@ public class PaymentService {
         headers.set("Authorization", "Bearer " + flwSecretKey);
         headers.set("Content-Type", "application/json");
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        @SuppressWarnings("unchecked")
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 FLW_BASE_URL + "/payments",
                 HttpMethod.POST,
                 new HttpEntity<>(payload, headers),
-                Map.class
+                (Class<Map<String, Object>>) (Class<?>) Map.class
         );
 
         // Extract the payment link from the Flutterwave response
         Map<String, Object> responseBody = response.getBody();
         if (responseBody != null && responseBody.containsKey("data")) {
-            return (String) ((Map<?, ?>) responseBody.get("data")).get("link");
+            Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+            return (String) data.get("link");
         }
         throw new RuntimeException("Failed to generate payment link");
     }

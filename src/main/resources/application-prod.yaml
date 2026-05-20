@@ -1,33 +1,17 @@
 spring:
-  profiles:
-    active: prod
-  
-  datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/smartparking}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+  config:
+    activate:
+      on-profile: prod
 
   jpa:
     hibernate:
-      # Validate schema; let Flyway manage all migrations
       ddl-auto: validate
 
   flyway:
-    enabled: true  # Enable Flyway for production migrations
+    enabled: true
     locations: classpath:db/migration
 
 app:
   jwt:
     secret: ${JWT_SECRET:secret}
     expiration: ${JWT_EXPIRATION:86400000}
-  flutterwave:
-    secret:
-      key: ${app.flutterwave.secret.key:}
-      hash: ${app.flutterwave.secret.hash:}
-  frontend:
-    url: ${app.frontend.url:https://smart-parking-frontend.vercel.app}
-    
-scheduler:
-  event-deactivation:
-    cron: ${scheduler.event-deactivation.cron:0 0 * * * ?}

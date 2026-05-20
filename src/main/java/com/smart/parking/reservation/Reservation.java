@@ -26,6 +26,7 @@ public class Reservation {
     private ParkingSpace parkingSpace;
 
     @Column(name = "slot_count", nullable = false)
+    @Builder.Default
     private Integer slotCount = 1;
 
     @Column(name = "start_time", nullable = false)
@@ -38,9 +39,11 @@ public class Reservation {
     private BigDecimal totalAmount;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean paid = false;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean verified = false;
 
     @Column(name = "qr_code", nullable = false, unique = true, length = 100)
@@ -58,6 +61,7 @@ public class Reservation {
     private LocalDateTime checkedOutAt;
 
     @Column(name = "overtime_amount")
+    @Builder.Default
     private BigDecimal overtimeAmount = BigDecimal.ZERO;
 
     @Column(name = "status", nullable = false)
