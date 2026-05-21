@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/",
                     "/health",
+                    "/ping",
                     "/api/auth/**",
                     "/api/ussd",
                     "/api-docs",
