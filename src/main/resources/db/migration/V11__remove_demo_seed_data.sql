@@ -10,7 +10,7 @@ BEGIN
     FROM reservations r
     LEFT JOIN users u ON u.id = r.user_id
     LEFT JOIN parking_spaces p ON p.id = r.parking_id
-    WHERE u.email IN ('admin@smartparking.rw', 'host@smartparking.rw')
+    WHERE u.email IN ('admin@smartparking.rw', 'host@smartparking.rw', 'host@kigali.seed')
        OR p.name IN (
             'BK Arena Parking',
             'Kigali Convention Centre',
@@ -28,7 +28,7 @@ BEGIN
   -- Remove demo reservations.
   DELETE FROM reservations
   WHERE user_id IN (
-    SELECT id FROM users WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw')
+    SELECT id FROM users WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw', 'host@kigali.seed')
   )
   OR parking_id IN (
     SELECT id FROM parking_spaces
@@ -60,8 +60,8 @@ BEGIN
     'CBD Parking',
     'Remera Parking'
   )
-  OR host_id IN (
-    SELECT id FROM users WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw')
+  OR owner_id IN (
+    SELECT id FROM users WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw', 'host@kigali.seed')
   );
 
   -- Remove the demo event if present.
@@ -70,5 +70,5 @@ BEGIN
 
   -- Remove demo users last so foreign keys are satisfied.
   DELETE FROM users
-  WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw');
+  WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw', 'host@kigali.seed');
 END $$;
