@@ -9,6 +9,8 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      - key: SPRING_FLYWAY_VALIDATE_ON_MIGRATE
+        value: "false"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
