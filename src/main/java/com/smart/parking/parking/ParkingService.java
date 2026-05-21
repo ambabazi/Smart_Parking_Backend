@@ -37,6 +37,59 @@ public class ParkingService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Parking space not found"));
     }
 
+    /**
+     * Get parking space by ID, UUID, or reference code (hybrid approach)
+     * Users can retrieve by any identifier
+     */
+    @Cacheable(cacheNames = "parkingSpaces", key = "'lookup:' + #identifier")
+    public ParkingDTO getByIdOrUuidOrCode(String identifier) {
+        // Try by UUID first
+        return spaceRepo.findByUuid(identifier)
+                .map(this::toDTO)
+                // Try by reference code
+                .orElseGet(() -> spaceRepo.findByReferenceCode(identifier)
+                        .map(this::toDTO)
+                        // Try by numeric ID
+                        .orElseGet(() -> {
+                            try {
+                                Long id = Long.parseLong(identifier);
+                                return spaceRepo.findById(id)
+                                        .map(this::toDTO)
+                                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                                "Parking space not found with ID: " + identifier));
+                            } catch (NumberFormatException e) {
+                                throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                        "Parking space not found with identifier: " + identifier);
+                            }
+                        }));
+    }
+
+    /**
+     * Get parking space by exact name (case-insensitive)
+     * Useful for drivers looking for a specific named parking area
+     */
+    @Cacheable(cacheNames = "parkingSpaces", key = "'name:' + #name")
+    public ParkingDTO getByName(String name) {
+        return spaceRepo.findByNameIgnoreCase(name)
+                .map(this::toDTO)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Parking space not found with name: " + name));
+    }
+
+    /**
+     * Search parking spaces by name (partial match, case-insensitive)
+     * Helps drivers find parking spaces by searching for keywords
+     */
+    @Cacheable(cacheNames = "parkingSpaces", key = "'search:' + #nameSearchTerm + ':' + #pageable.pageNumber + ':' + #pageable.pageSize")
+    public Page<ParkingDTO> searchByName(String nameSearchTerm, Pageable pageable) {
+        Page<ParkingSpace> spaces = spaceRepo.findByNameContainingIgnoreCase(nameSearchTerm, pageable);
+        if (spaces.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "No parking spaces found matching: " + nameSearchTerm);
+        }
+        return spaces.map(this::toDTO);
+    }
+
     @Cacheable(cacheNames = "parkingSpaces", key = "'all:' + #pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
     public Page<ParkingDTO> getAll(Pageable pageable) {
         return spaceRepo.findAll(pageable).map(this::toDTO);
@@ -109,6 +162,8 @@ public class ParkingService {
     private ParkingDTO toDTO(ParkingSpace p) {
         return new ParkingDTO(
                 p.getId(),
+                p.getUuid(),
+                p.getReferenceCode(),
                 p.getName(),
                 p.getAddress(),
                 p.getLatitude(),

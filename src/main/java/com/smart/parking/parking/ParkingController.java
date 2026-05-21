@@ -38,10 +38,26 @@ public class ParkingController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ParkingDTO> getById(@PathVariable Long id) {
+    public ResponseEntity<ParkingDTO> getById(@PathVariable String id) {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
-                .body(parkingService.getById(id));
+                .body(parkingService.getByIdOrUuidOrCode(id));
+    }
+
+    @GetMapping("/by-name/{name}")
+    public ResponseEntity<ParkingDTO> getByName(@PathVariable String name) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.getByName(name));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Page<ParkingDTO>> searchByName(
+            @RequestParam String name,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(parkingService.searchByName(name, pageable));
     }
 
     @GetMapping
@@ -100,6 +116,8 @@ public class ParkingController {
     private ParkingSpaceDetailDTO toDetailDTO(ParkingSpace space) {
         return ParkingSpaceDetailDTO.builder()
                 .id(space.getId())
+                .uuid(space.getUuid())
+                .referenceCode(space.getReferenceCode())
                 .name(space.getName())
                 .address(space.getAddress())
                 .latitude(space.getLatitude())

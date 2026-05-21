@@ -20,6 +20,12 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 36)
+    private String uuid;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String referenceCode;
+
     @ManyToOne
     @JoinColumn(name = "reservation_id")
     private Reservation reservation;

@@ -166,6 +166,8 @@ public class ReservationController {
     private ReservationResponseDTO toResponseDTO(Reservation res) {
         return ReservationResponseDTO.builder()
                 .id(res.getId())
+                .uuid(res.getUuid())
+                .referenceCode(res.getReferenceCode())
                 .userId(res.getUser().getId())
                 .userFullName(res.getUser().getFullName())
                 .userEmail(res.getUser().getEmail())

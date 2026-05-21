@@ -23,6 +23,12 @@ public class ParkingSpace {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 36)
+    private String uuid;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String referenceCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;

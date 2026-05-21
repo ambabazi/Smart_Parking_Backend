@@ -9,6 +9,10 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByTransactionId(String transactionId);
     Optional<Payment> findByReservationId(Long reservationId);
+    
+    // Find by UUID or reference code
+    Optional<Payment> findByUuid(String uuid);
+    Optional<Payment> findByReferenceCode(String referenceCode);
 
     // Dashboard methods for driver
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.reservation.user.id = :userId AND p.status = 'SUCCESS'")

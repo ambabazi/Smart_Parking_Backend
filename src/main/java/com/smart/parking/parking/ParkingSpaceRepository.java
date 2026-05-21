@@ -15,6 +15,14 @@ import java.util.Optional;
 @Repository
 public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long> {
 
+    // Find by UUID or reference code (user-friendly methods)
+    Optional<ParkingSpace> findByUuid(String uuid);
+    Optional<ParkingSpace> findByReferenceCode(String referenceCode);
+    
+    // Find by name (case-insensitive for easier discovery)
+    Optional<ParkingSpace> findByNameIgnoreCase(String name);
+    Page<ParkingSpace> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
     // Haversine formula — finds spaces within radiusMetres of lat/lng
     @Query(value = """
             SELECT p FROM ParkingSpace p

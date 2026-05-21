@@ -12,6 +12,10 @@ import java.util.Optional;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     Optional<Reservation> findByQrCode(String qrCode);
+    
+    // Find by UUID or reference code
+    Optional<Reservation> findByUuid(String uuid);
+    Optional<Reservation> findByReferenceCode(String referenceCode);
 
     // New: Find all reservations by user email
     @Query("SELECT r FROM Reservation r WHERE r.user.email = :email ORDER BY r.createdAt DESC")

@@ -5,6 +5,8 @@ package com.smart.parking.parking;
 // Return only what the frontend needs.
 public record ParkingDTO(
         Long id,
+        String uuid,
+        String referenceCode,
         String name,
         String address,
         Double latitude,

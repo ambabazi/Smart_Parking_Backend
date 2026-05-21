@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ParkingSpaceDetailDTO {
     private Long id;
+    private String uuid;
+    private String referenceCode;
     private String name;
     private String address;
     private Double latitude;
