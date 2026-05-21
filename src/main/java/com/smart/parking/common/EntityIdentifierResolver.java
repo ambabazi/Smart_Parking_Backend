@@ -1,5 +1,7 @@
 package com.smart.parking.common;
 
+import com.smart.parking.event.Event;
+import com.smart.parking.event.EventRepository;
 import com.smart.parking.parking.ParkingSpace;
 import com.smart.parking.parking.ParkingSpaceRepository;
 import com.smart.parking.reservation.Reservation;
@@ -13,6 +15,7 @@ public class EntityIdentifierResolver {
 
     private final ParkingSpaceRepository parkingSpaceRepository;
     private final ReservationRepository reservationRepository;
+    private final EventRepository eventRepository;
 
     public ParkingSpace resolveParkingSpace(String identifier) {
         if (identifier == null || identifier.isBlank()) {
@@ -35,6 +38,16 @@ public class EntityIdentifierResolver {
                 .or(() -> reservationRepository.findByUuid(trimmed))
                 .or(() -> parseLong(trimmed).flatMap(reservationRepository::findById))
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found: " + trimmed));
+    }
+
+    public Event resolveEvent(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException("Event identifier is required");
+        }
+        String trimmed = identifier.trim();
+        return eventRepository.findByNameIgnoreCase(trimmed)
+                .or(() -> parseLong(trimmed).flatMap(eventRepository::findById))
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + trimmed));
     }
 
     private java.util.Optional<Long> parseLong(String value) {

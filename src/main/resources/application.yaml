@@ -20,18 +20,27 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
   cache:
-    type: redis
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      database: ${REDIS_DATABASE:0}
-  task:
-    scheduling:
-      pool:
-        size: 2
+    type: simple
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+app:
+  redis:
+    enabled: false
+  frontend:
+    url: ${APP_FRONTEND_URL:http://localhost:5173}
+  flutterwave:
+    public:
+      key: ${FLUTTERWAVE_PUBLIC_KEY:}
+    secret:
+      key: ${FLUTTERWAVE_SECRET_KEY:}
+      hash: ${FLUTTERWAVE_SECRET_HASH:}
+  performance:
+    slow-request-threshold-ms: ${SLOW_REQUEST_THRESHOLD_MS:500}
 
 management:
   endpoints:
@@ -50,18 +59,6 @@ jwt:
   expiration: ${JWT_EXPIRATION:900000}
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
 
-app:
-  frontend:
-    url: ${APP_FRONTEND_URL:http://localhost:3000}
-  flutterwave:
-    public:
-      key: ${FLUTTERWAVE_PUBLIC_KEY:}
-    secret:
-      key: ${FLUTTERWAVE_SECRET_KEY:}
-      hash: ${FLUTTERWAVE_SECRET_HASH:}
-  performance:
-    slow-request-threshold-ms: ${SLOW_REQUEST_THRESHOLD_MS:500}
-
 springdoc:
   api-docs:
     path: /api-docs
@@ -72,7 +69,7 @@ springdoc:
     disable-swagger-default-url: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 scheduler:
   event-deactivation:

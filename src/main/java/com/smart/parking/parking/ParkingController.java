@@ -1,6 +1,8 @@
 package com.smart.parking.parking;
 
 import com.smart.parking.common.ApiResponse;
+import com.smart.parking.common.EntityIdentifierResolver;
+import com.smart.parking.event.Event;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class ParkingController {
 
     private final ParkingService parkingService;
+    private final EntityIdentifierResolver identifierResolver;
 
     // Public endpoints for searching and viewing parking spaces
     @GetMapping("/nearby")
@@ -67,12 +70,13 @@ public class ParkingController {
                 .body(parkingService.getAll(pageable));
     }
 
-    @GetMapping("/event/{eventId}")
-    public ResponseEntity<Page<ParkingDTO>> getByEvent(@PathVariable Long eventId,
+    @GetMapping("/event/{eventIdentifier}")
+    public ResponseEntity<Page<ParkingDTO>> getByEvent(@PathVariable String eventIdentifier,
                                                        @PageableDefault(size = 10) Pageable pageable) {
+        Event event = identifierResolver.resolveEvent(eventIdentifier);
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
-                .body(parkingService.getSpacesByEvent(eventId, pageable));
+                .body(parkingService.getSpacesByEvent(event.getId(), pageable));
     }
 
     // Owner endpoints

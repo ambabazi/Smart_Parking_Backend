@@ -4,26 +4,22 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@RequiredArgsConstructor
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private static final int AUTH_LIMIT_PER_MINUTE = 12;
     private static final int PUBLIC_LIMIT_PER_MINUTE = 60;
-    private static final String AUTH_PREFIX = "rate:auth:";
-    private static final String PUBLIC_PREFIX = "rate:public:";
 
-    private final StringRedisTemplate redisTemplate;
+    private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,13 +31,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         String bucketKey = buildKey(request);
-        Long count = redisTemplate.opsForValue().increment(bucketKey);
-        if (count != null && count == 1L) {
-            redisTemplate.expire(bucketKey, Duration.ofMinutes(1));
-        }
-
         long limit = isAuthPath(request) ? AUTH_LIMIT_PER_MINUTE : PUBLIC_LIMIT_PER_MINUTE;
-        if (count != null && count > limit) {
+        long count = increment(bucketKey);
+
+        if (count > limit) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Too many requests. Please try again later.\"}");
@@ -49,6 +42,17 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private long increment(String bucketKey) {
+        long now = Instant.now().getEpochSecond();
+        Window window = windows.compute(bucketKey, (key, existing) -> {
+            if (existing == null || existing.expiresAtEpochSecond() <= now) {
+                return new Window(now + 60, 1);
+            }
+            return new Window(existing.expiresAtEpochSecond(), existing.count() + 1);
+        });
+        return window.count();
     }
 
     private boolean isRateLimitedPath(HttpServletRequest request) {
@@ -69,7 +73,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         } else if (ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }
-        String prefix = isAuthPath(request) ? AUTH_PREFIX : PUBLIC_PREFIX;
-        return prefix + ip + ":" + request.getRequestURI();
+        return ip + ":" + request.getRequestURI();
     }
+
+    private record Window(long expiresAtEpochSecond, long count) {}
 }

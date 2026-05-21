@@ -1,5 +1,6 @@
 package com.smart.parking.event;
 
+import com.smart.parking.common.EntityIdentifierResolver;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 public class EventController {
 
     private final EventService eventService;
+    private final EntityIdentifierResolver identifierResolver;
 
     // POST /events — admin only
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public EventResponse createEvent(
             @Valid @RequestBody EventRequest req) {
         return eventService.createEvent(req);
@@ -40,10 +42,10 @@ public class EventController {
     }
 
     // DELETE /events/{id}/deactivate — admin only
-    @DeleteMapping("/{id}/deactivate")
+    @DeleteMapping("/{identifier}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deactivate(@PathVariable Long id) {
-        eventService.deactivateEvent(id);
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public void deactivate(@PathVariable String identifier) {
+        eventService.deactivateEvent(identifierResolver.resolveEvent(identifier).getId());
     }
 }

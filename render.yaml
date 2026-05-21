@@ -6,32 +6,18 @@ services:
     repo: ./
     branch: main
     dockerfilePath: Dockerfile
-    buildCommand: ./mvnw -Dmaven.test.skip=true package
-    startCommand: java -jar target/parking-0.0.1-SNAPSHOT.jar
     envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: DB_URL
-        scope: RUNTIME
-        value: "jdbc:postgresql://<DB_HOST>:5432/<DB_NAME>"
+        sync: false
       - key: DB_USERNAME
-        scope: RUNTIME
-        value: "<DB_USER>"
+        sync: false
       - key: DB_PASSWORD
-        scope: RUNTIME
-        value: "<DB_PASS>"
+        sync: false
       - key: JWT_SECRET
-        scope: RUNTIME
-        value: "<replace-with-32-char-secret>"
+        generateValue: true
       - key: ALLOWED_ORIGINS
-        scope: RUNTIME
-        value: "https://your-frontend.vercel.app"
-
-static_sites:
-  - name: smart-parking-frontend
-    repo: ./Smart-parking-/Smart-parking-
-    branch: main
-    buildCommand: npm ci && npm run build
-    publishPath: dist
-    envVars:
-      - key: VITE_API_URL
-        scope: RUNTIME
-        value: "https://smart-parking-api-xxxxx.onrender.com"
+        value: "http://localhost:5173,https://smart-parking-backend-2.onrender.com"
+      - key: APP_REDIS_ENABLED
+        value: "false"

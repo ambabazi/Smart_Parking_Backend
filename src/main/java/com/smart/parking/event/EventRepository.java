@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -25,4 +26,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // returns expired events that haven't been deactivated yet
     List<Event> findByEndTimeBeforeAndActiveTrue(LocalDateTime now);
+
+    Optional<Event> findByNameIgnoreCase(String name);
 }
