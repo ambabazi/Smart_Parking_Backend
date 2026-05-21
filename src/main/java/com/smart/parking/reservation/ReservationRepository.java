@@ -76,4 +76,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         ORDER BY r.startTime DESC
     """)
     java.util.Optional<Reservation> findCurrentActiveReservation(@Param("driverId") Long driverId);
+
+    // Dashboard methods for driver
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId")
+    Long countByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND r.status = :status")
+    Long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") String status);
+
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.user.id = :userId AND r.startTime > :time")
+    Long countByUserIdAndStartTimeAfter(@Param("userId") Long userId, @Param("time") java.time.LocalDateTime time);
+
+    // Dashboard methods for owner
+    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.parkingSpace.owner.id = :ownerId")
+    Long countByOwnerId(@Param("ownerId") Long ownerId);
+
+    @Query("""
+        SELECT COUNT(r) FROM Reservation r 
+        WHERE r.parkingSpace.owner.id = :ownerId 
+        AND r.startTime <= CURRENT_TIMESTAMP 
+        AND r.endTime >= CURRENT_TIMESTAMP
+    """)
+    Long countActiveReservationsByOwnerId(@Param("ownerId") Long ownerId);
 }

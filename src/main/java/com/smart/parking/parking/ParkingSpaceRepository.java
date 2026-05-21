@@ -67,4 +67,7 @@ public interface ParkingSpaceRepository extends JpaRepository<ParkingSpace, Long
     List<ParkingSpace> findByOwnerEmail(@Param("ownerEmail") String ownerEmail);
 
     List<ParkingSpace> findByOwnerId(Long ownerId);
+
+    @Query("SELECT COUNT(p) FROM ParkingSpace p WHERE p.owner.id = :ownerId")
+    Long countByOwnerId(@Param("ownerId") Long ownerId);
 }
