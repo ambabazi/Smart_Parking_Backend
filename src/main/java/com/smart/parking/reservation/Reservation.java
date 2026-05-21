@@ -1,12 +1,14 @@
 package com.smart.parking.reservation;
 
 import com.smart.parking.auth.User;
+import com.smart.parking.common.ReferenceCodeGenerator;
 import com.smart.parking.parking.ParkingSpace;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "reservations", indexes = {
@@ -86,5 +88,18 @@ public class Reservation {
     // Compatibility: provide boolean-style accessor used by legacy tests
     public boolean isPaid() {
         return Boolean.TRUE.equals(this.paid);
+    }
+
+    @PrePersist
+    void assignPublicIdentifiers() {
+        if (uuid == null || uuid.isBlank()) {
+            uuid = UUID.randomUUID().toString();
+        }
+        if (referenceCode == null || referenceCode.isBlank()) {
+            referenceCode = ReferenceCodeGenerator.reservationCode();
+        }
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 }

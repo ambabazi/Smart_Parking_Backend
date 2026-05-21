@@ -8,7 +8,7 @@ import lombok.Data;
 public class VerifyRequest {
 
     @NotNull(message = "Reservation ID is required")
-    private Long reservationId;
+    private String reservationId;
 
     @NotBlank(message = "QR content is required")
     private String qrContent;

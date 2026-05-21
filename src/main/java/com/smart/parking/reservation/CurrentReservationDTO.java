@@ -3,7 +3,7 @@ package com.smart.parking.reservation;
 import java.time.LocalDateTime;
 
 public class CurrentReservationDTO {
-    private Long id;
+    private String referenceCode;
     private String parkingSpaceName;
     private String address;
     private LocalDateTime startTime;
@@ -12,9 +12,9 @@ public class CurrentReservationDTO {
     private String status;
     private Long minutesRemaining;
 
-    public CurrentReservationDTO(Long id, String parkingSpaceName, String address, LocalDateTime startTime,
+    public CurrentReservationDTO(String referenceCode, String parkingSpaceName, String address, LocalDateTime startTime,
                                  LocalDateTime endTime, Integer slotCount, String status, Long minutesRemaining) {
-        this.id = id;
+        this.referenceCode = referenceCode;
         this.parkingSpaceName = parkingSpaceName;
         this.address = address;
         this.startTime = startTime;
@@ -24,7 +24,7 @@ public class CurrentReservationDTO {
         this.minutesRemaining = minutesRemaining;
     }
 
-    public Long getId() { return id; }
+    public String getReferenceCode() { return referenceCode; }
     public String getParkingSpaceName() { return parkingSpaceName; }
     public String getAddress() { return address; }
     public LocalDateTime getStartTime() { return startTime; }

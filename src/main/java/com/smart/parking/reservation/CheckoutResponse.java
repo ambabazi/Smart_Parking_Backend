@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CheckoutResponse {
-    private Long reservationId;
+    private String reservationReferenceCode;
     private LocalDateTime checkedOutAt;
     private LocalDateTime bookedUntil;
     @Builder.Default

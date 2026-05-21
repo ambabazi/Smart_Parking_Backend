@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 
 @Data
 public class BookingRequest {
-    @NotNull(message = "Parking space ID is required")
-    private Long parkingSpaceId;
+    @NotNull(message = "Parking space identifier is required")
+    private String parkingSpaceId;
 
     @NotNull(message = "Slot count is required")
     @Positive(message = "Slot count must be greater than 0")

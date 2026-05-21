@@ -1,8 +1,9 @@
 package com.smart.parking.payment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smart.parking.common.EntityIdentifierResolver;
+import com.smart.parking.common.ResourceNotFoundException;
 import com.smart.parking.reservation.Reservation;
-import com.smart.parking.reservation.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -18,24 +19,30 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final ReservationRepository reservationRepository;
+    private final EntityIdentifierResolver identifierResolver;
     private final ObjectMapper objectMapper;
 
     @Value("${app.flutterwave.secret.hash:}")
-    private String flutterwaveSecretHash; // Used to verify Flutterwave webhooks
+    private String flutterwaveSecretHash;
 
-    @PostMapping("/initiate/{reservationId}")
+    @PostMapping("/initiate/{reservationIdentifier}")
     @PreAuthorize("hasAuthority('DRIVER')")
-    public ResponseEntity<?> initiatePayment(@PathVariable Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public ResponseEntity<?> initiatePayment(@PathVariable String reservationIdentifier) {
+        try {
+            Reservation reservation = identifierResolver.resolveReservation(reservationIdentifier);
 
-        if (Boolean.TRUE.equals(reservation.getPaid())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "This reservation has already been paid."));
+            if (Boolean.TRUE.equals(reservation.getPaid())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "This reservation has already been paid."));
+            }
+
+            String paymentLink = paymentService.initiatePayment(reservation);
+            return ResponseEntity.ok(Map.of(
+                    "paymentUrl", paymentLink,
+                    "reservationReferenceCode", reservation.getReferenceCode()
+            ));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
-
-        String paymentLink = paymentService.initiatePayment(reservation);
-        return ResponseEntity.ok(Map.of("paymentUrl", paymentLink));
     }
 
     @PostMapping("/webhook")
@@ -43,40 +50,35 @@ public class PaymentController {
             @RequestBody String rawBody,
             @RequestHeader(value = "verif-hash", required = false) String signature
     ) {
-        // 1. Verify the webhook is actually from Flutterwave (Security Check) [cite: 468, 471, 472]
         if (signature == null || !signature.equals(flutterwaveSecretHash)) {
             return ResponseEntity.status(401).build();
         }
 
         try {
-            // 2. Parse and process the event [cite: 474]
             FlutterwaveEvent event = objectMapper.readValue(rawBody, FlutterwaveEvent.class);
             paymentService.processWebhook(event);
             return ResponseEntity.ok().build();
-
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @GetMapping("/status/{reservationId}")
+    @GetMapping("/status/{reservationIdentifier}")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> getPaymentStatus(
-            @PathVariable Long reservationId,
+            @PathVariable String reservationIdentifier,
             Authentication authentication) {
         try {
-            // Verify reservation ownership
-            var reservation = reservationRepository.findById(reservationId)
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            Reservation reservation = identifierResolver.resolveReservation(reservationIdentifier);
             String email = authentication.getName();
             if (!reservation.getUser().getEmail().equals(email)) {
                 return ResponseEntity.status(403).build();
             }
 
-            var status = paymentService.getPaymentStatus(reservationId);
+            var status = paymentService.getPaymentStatus(reservation.getId());
             if (status == null) return ResponseEntity.noContent().build();
             return ResponseEntity.ok(status);
-        } catch (IllegalArgumentException e) {
+        } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
     }

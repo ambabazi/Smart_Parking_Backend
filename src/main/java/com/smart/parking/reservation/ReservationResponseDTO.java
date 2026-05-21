@@ -19,7 +19,7 @@ public class ReservationResponseDTO {
     private Long userId;
     private String userFullName;
     private String userEmail;
-    private Long parkingSpaceId;
+    private String parkingSpaceReferenceCode;
     private String parkingSpaceName;
     private Integer slotCount;
     private LocalDateTime startTime;

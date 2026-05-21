@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.validation.ConstraintViolationException;
@@ -40,6 +41,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
         String reason = ex.getReason() == null || ex.getReason().isBlank() ? "Request failed" : ex.getReason();
         return ResponseEntity.status(ex.getStatusCode()).body(ApiResponse.error(reason));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String name = ex.getName() == null ? "identifier" : ex.getName();
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error("Invalid value for " + name + ". Use a reference code, UUID, or numeric ID."));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

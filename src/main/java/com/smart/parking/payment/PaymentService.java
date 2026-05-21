@@ -39,7 +39,7 @@ public class PaymentService {
                 .multiply(BigDecimal.valueOf(res.getSlotCount()));
 
         Map<String, Object> payload = Map.of(
-                "tx_ref", "KP-" + res.getId(),
+                "tx_ref", "KP-" + res.getReferenceCode(),
                 "amount", totalAmount,
                 "currency", "RWF",
                 "redirect_url", frontendUrl + "/payment/callback",
@@ -78,9 +78,15 @@ public class PaymentService {
     public void processWebhook(FlutterwaveEvent event) {
         if ("successful".equals(event.getData().getStatus())) {
             String txRef = event.getData().getTxRef();
-            Long reservationId = Long.parseLong(txRef.replace("KP-", ""));
-
-            Reservation reservation = reservationRepository.findById(reservationId)
+            String reservationKey = txRef.replace("KP-", "");
+            Reservation reservation = reservationRepository.findByReferenceCode(reservationKey)
+                    .or(() -> {
+                        try {
+                            return reservationRepository.findById(Long.parseLong(reservationKey));
+                        } catch (NumberFormatException ex) {
+                            return java.util.Optional.empty();
+                        }
+                    })
                     .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
             reservation.setPaid(true);

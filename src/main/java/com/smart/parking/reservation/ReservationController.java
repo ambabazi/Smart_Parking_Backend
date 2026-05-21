@@ -1,6 +1,8 @@
 package com.smart.parking.reservation;
 
 import com.smart.parking.common.ApiResponse;
+import com.smart.parking.common.EntityIdentifierResolver;
+import com.smart.parking.common.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -22,6 +24,7 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final ReservationRepository reservationRepository;
+    private final EntityIdentifierResolver identifierResolver;
 
     @PostMapping
     @PreAuthorize("hasAuthority('DRIVER')")
@@ -55,7 +58,7 @@ public class ReservationController {
     @GetMapping("/check-availability")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> checkAvailability(
-            @RequestParam Long parkingSpaceId,
+            @RequestParam String parkingSpaceId,
             @RequestParam String startTime,
             @RequestParam String endTime,
             @RequestParam(defaultValue = "1") Integer slotCount
@@ -79,22 +82,25 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Current reservation", dto));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{identifier}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getReservation(@PathVariable Long id) {
-        return reservationRepository.findById(id)
-                .map(res -> ResponseEntity.ok(ApiResponse.success("Reservation found", toResponseDTO(res))))
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getReservation(@PathVariable String identifier) {
+        try {
+            Reservation res = identifierResolver.resolveReservation(identifier);
+            return ResponseEntity.ok(ApiResponse.success("Reservation found", toResponseDTO(res)));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @PatchMapping("/{id}/cancel")
+    @PatchMapping("/{identifier}/cancel")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> cancelReservation(
-            @PathVariable Long id,
+            @PathVariable String identifier,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-            Reservation reservation = reservationService.cancelReservation(id, userEmail);
+            Reservation reservation = reservationService.cancelReservation(identifier, userEmail);
             return ResponseEntity.ok(ApiResponse.success("Reservation cancelled", toResponseDTO(reservation)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -114,14 +120,14 @@ public class ReservationController {
         return ResponseEntity.ok(ApiResponse.success("Active reservations", dtos));
     }
 
-    @PostMapping("/{id}/check-in")
+    @PostMapping("/{identifier}/check-in")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> checkIn(
-            @PathVariable Long id,
+            @PathVariable String identifier,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-            Reservation reservation = reservationService.checkIn(id, userEmail);
+            Reservation reservation = reservationService.checkIn(identifier, userEmail);
             return ResponseEntity.ok(ApiResponse.success("Checked in successfully", toResponseDTO(reservation)));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -130,14 +136,14 @@ public class ReservationController {
         }
     }
 
-    @PostMapping("/{id}/checkout")
+    @PostMapping("/{identifier}/checkout")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> checkout(
-            @PathVariable Long id,
+            @PathVariable String identifier,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-            CheckoutResponse response = reservationService.checkout(id, userEmail);
+            CheckoutResponse response = reservationService.checkout(identifier, userEmail);
             return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -146,15 +152,15 @@ public class ReservationController {
         }
     }
 
-    @PostMapping("/{id}/pay-overtime")
+    @PostMapping("/{identifier}/pay-overtime")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> payOvertime(
-            @PathVariable Long id,
+            @PathVariable String identifier,
             @RequestParam @NotNull @Positive java.math.BigDecimal amount,
             Authentication authentication) {
         try {
             String userEmail = authentication.getName();
-            Reservation reservation = reservationService.payOvertime(id, userEmail, amount);
+            Reservation reservation = reservationService.payOvertime(identifier, userEmail, amount);
             return ResponseEntity.ok(ApiResponse.success("Overtime paid successfully", toResponseDTO(reservation)));
         } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -171,7 +177,7 @@ public class ReservationController {
                 .userId(res.getUser().getId())
                 .userFullName(res.getUser().getFullName())
                 .userEmail(res.getUser().getEmail())
-                .parkingSpaceId(res.getParkingSpace().getId())
+                .parkingSpaceReferenceCode(res.getParkingSpace().getReferenceCode())
                 .parkingSpaceName(res.getParkingSpace().getName())
                 .slotCount(res.getSlotCount())
                 .startTime(res.getStartTime())

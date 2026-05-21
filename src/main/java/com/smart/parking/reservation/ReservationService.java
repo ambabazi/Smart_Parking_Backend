@@ -2,6 +2,7 @@ package com.smart.parking.reservation;
 
 import com.smart.parking.auth.User;
 import com.smart.parking.auth.UserRepository;
+import com.smart.parking.common.EntityIdentifierResolver;
 import com.smart.parking.notification.NotificationService;
 import com.smart.parking.parking.ParkingSpace;
 import com.smart.parking.parking.ParkingSpaceRepository;
@@ -26,6 +27,7 @@ public class ReservationService {
     private final ParkingSpaceRepository spaceRepo;
     private final UserRepository userRepo;
     private final NotificationService notificationService;
+    private final EntityIdentifierResolver identifierResolver;
 
     @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats", "parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner"}, allEntries = true)
     @Transactional
@@ -38,8 +40,7 @@ public class ReservationService {
         User user = userRepo.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        ParkingSpace space = spaceRepo.findById(req.getParkingSpaceId())
-                .orElseThrow(() -> new IllegalArgumentException("Space not found"));
+        ParkingSpace space = identifierResolver.resolveParkingSpace(req.getParkingSpaceId());
 
         int slotsRequested = req.getSlotCount();
 
@@ -73,9 +74,8 @@ public class ReservationService {
 
     @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats", "parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner"}, allEntries = true)
     @Transactional
-    public Reservation cancelReservation(Long reservationId, String userEmail) throws Exception {
-        Reservation res = reservationRepo.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public Reservation cancelReservation(String reservationIdentifier, String userEmail) throws Exception {
+        Reservation res = identifierResolver.resolveReservation(reservationIdentifier);
 
         if (!res.getUser().getEmail().equals(userEmail)) {
             throw new IllegalArgumentException("You can only cancel your own reservations");
@@ -92,9 +92,8 @@ public class ReservationService {
 
     @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
-    public Reservation checkIn(Long reservationId, String userEmail) throws Exception {
-        Reservation res = reservationRepo.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public Reservation checkIn(String reservationIdentifier, String userEmail) throws Exception {
+        Reservation res = identifierResolver.resolveReservation(reservationIdentifier);
 
         if (!res.getUser().getEmail().equals(userEmail)) {
             throw new IllegalArgumentException("You can only check in to your own reservations");
@@ -115,9 +114,8 @@ public class ReservationService {
 
     @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
-    public CheckoutResponse checkout(Long reservationId, String userEmail) throws Exception {
-        Reservation res = reservationRepo.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public CheckoutResponse checkout(String reservationIdentifier, String userEmail) throws Exception {
+        Reservation res = identifierResolver.resolveReservation(reservationIdentifier);
 
         if (!res.getUser().getEmail().equals(userEmail)) {
             throw new IllegalArgumentException("You can only check out from your own reservations");
@@ -135,7 +133,7 @@ public class ReservationService {
         long overtimeMinutes = overstay.toMinutes();
 
         CheckoutResponse response = new CheckoutResponse();
-        response.setReservationId(res.getId());
+        response.setReservationReferenceCode(res.getReferenceCode());
         response.setCheckedOutAt(now);
         response.setBookedUntil(res.getEndTime());
 
@@ -159,9 +157,8 @@ public class ReservationService {
 
     @CacheEvict(cacheNames = {"reservationsByUser", "reservationsActive", "dashboardStats"}, allEntries = true)
     @Transactional
-    public Reservation payOvertime(Long reservationId, String userEmail, BigDecimal amount) throws Exception {
-        Reservation res = reservationRepo.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public Reservation payOvertime(String reservationIdentifier, String userEmail, BigDecimal amount) throws Exception {
+        Reservation res = identifierResolver.resolveReservation(reservationIdentifier);
 
         if (!res.getUser().getEmail().equals(userEmail)) {
             throw new IllegalArgumentException("You can only pay for your own reservations");
@@ -190,7 +187,7 @@ public class ReservationService {
 
     // Availability check used by frontend before creating reservation
     @Transactional(readOnly = true)
-    public AvailabilityResponse checkAvailability(Long parkingSpaceId, LocalDateTime startTime, LocalDateTime endTime, Integer requestedSlots) {
+    public AvailabilityResponse checkAvailability(String parkingSpaceIdentifier, LocalDateTime startTime, LocalDateTime endTime, Integer requestedSlots) {
         if (startTime.isAfter(endTime) || startTime.isEqual(endTime)) {
             throw new IllegalArgumentException("Start time must be before end time");
         }
@@ -198,8 +195,8 @@ public class ReservationService {
             throw new IllegalArgumentException("Start time must be in the future");
         }
 
-        ParkingSpace space = spaceRepo.findById(parkingSpaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Parking space not found"));
+        ParkingSpace space = identifierResolver.resolveParkingSpace(parkingSpaceIdentifier);
+        Long parkingSpaceId = space.getId();
 
         Integer occupied = reservationRepo.countOccupiedSlots(parkingSpaceId, startTime, endTime);
         int available = space.getTotalSlots() - (occupied == null ? 0 : occupied);
@@ -222,7 +219,7 @@ public class ReservationService {
         Reservation r = opt.get();
         long minutesRemaining = ChronoUnit.MINUTES.between(LocalDateTime.now(), r.getEndTime());
         return new CurrentReservationDTO(
-                r.getId(),
+                r.getReferenceCode(),
                 r.getParkingSpace().getName(),
                 r.getParkingSpace().getAddress(),
                 r.getStartTime(),

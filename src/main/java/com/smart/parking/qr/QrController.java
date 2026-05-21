@@ -1,13 +1,14 @@
 package com.smart.parking.qr;
 
 import com.smart.parking.common.ApiResponse;
+import com.smart.parking.common.EntityIdentifierResolver;
 import com.smart.parking.auth.UserRepository;
-import com.smart.parking.reservation.ReservationRepository;
 import com.smart.parking.reservation.Reservation;
+import com.smart.parking.reservation.ReservationRepository;
 import com.smart.parking.reservation.QRVerificationResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ public class QrController {
     private final QrService qrService;
     private final UserRepository userRepository;
     private final ReservationRepository reservationRepository;
+    private final EntityIdentifierResolver identifierResolver;
 
     /**
      * Generate a QR PNG for a reservation.
@@ -32,21 +34,19 @@ public class QrController {
     @GetMapping(value = "/generate", produces = MediaType.IMAGE_PNG_VALUE)
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<byte[]> generateQr(
-            @RequestParam @NotNull @Positive Long reservationId,
+            @RequestParam @NotBlank String reservationId,
             org.springframework.security.core.Authentication authentication) {
         try {
             String email = authentication.getName();
             var user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            // Verify the reservation belongs to this user
-            Reservation reservation = reservationRepository.findById(reservationId)
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+            Reservation reservation = identifierResolver.resolveReservation(reservationId);
             if (!reservation.getUser().getId().equals(user.getId())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            byte[] png = qrService.generateQrBytes(reservationId, user.getId());
+            byte[] png = qrService.generateQrBytes(reservation.getId(), user.getId());
             return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                    "inline; filename=qr-" + reservationId + ".png")
+                    "inline; filename=qr-" + reservation.getReferenceCode() + ".png")
                 .body(png);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -69,13 +69,12 @@ public class QrController {
             String email = authentication.getName();
             var host = userRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            boolean valid = qrService.verifyQrContent(request.getQrContent(), request.getReservationId());
+            Reservation reservation = identifierResolver.resolveReservation(request.getReservationId());
+
+            boolean valid = qrService.verifyQrContent(request.getQrContent(), reservation.getId());
             if (!valid) {
                 return ResponseEntity.ok(ApiResponse.success("INVALID", new QRVerificationResponse("INVALID", false, null, null, null)));
             }
-
-            Reservation reservation = reservationRepository.findById(request.getReservationId())
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
             // Verify host owns the parking space
             if (!reservation.getParkingSpace().getOwner().getId().equals(host.getId())) {

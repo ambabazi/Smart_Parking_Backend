@@ -1,12 +1,15 @@
 package com.smart.parking.parking;
 
 import com.smart.parking.auth.User;
+import com.smart.parking.common.ReferenceCodeGenerator;
 import com.smart.parking.event.Event;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "parking_spaces", indexes = {
@@ -67,5 +70,15 @@ public class ParkingSpace {
 
     public java.math.BigDecimal getPricePerHour() {
         return this.pricePerSlot == null ? null : java.math.BigDecimal.valueOf(this.pricePerSlot);
+    }
+
+    @PrePersist
+    void assignPublicIdentifiers() {
+        if (uuid == null || uuid.isBlank()) {
+            uuid = UUID.randomUUID().toString();
+        }
+        if (referenceCode == null || referenceCode.isBlank()) {
+            referenceCode = ReferenceCodeGenerator.parkingCode();
+        }
     }
 }

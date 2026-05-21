@@ -1,10 +1,12 @@
 package com.smart.parking.payment;
 
+import com.smart.parking.common.ReferenceCodeGenerator;
 import com.smart.parking.reservation.Reservation;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payments", indexes = {
@@ -34,4 +36,14 @@ public class Payment {
     private String status;
     @Column(name = "flutterwave_id")
     private String transactionId;
+
+    @PrePersist
+    void assignPublicIdentifiers() {
+        if (uuid == null || uuid.isBlank()) {
+            uuid = UUID.randomUUID().toString();
+        }
+        if (referenceCode == null || referenceCode.isBlank()) {
+            referenceCode = ReferenceCodeGenerator.paymentCode();
+        }
+    }
 }
