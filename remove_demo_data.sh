@@ -1,57 +1,55 @@
 #!/bin/bash
+# Remove demo/seed data from the Smart Parking database (uses env vars).
 
-# Script to remove demo data from Smart Parking database
+set -euo pipefail
 
-echo "Removing demo data from Smart Parking database..."
+DB_NAME="${DB_NAME:-smartparking}"
+DB_USER="${DB_USERNAME:-postgres}"
+DB_HOST="${DB_HOST:-localhost}"
 
-# Connect to PostgreSQL and remove demo data
-sudo -u postgres psql -d smartparking <<EOF
+echo "Removing demo/seed data from database '${DB_NAME}'..."
 
--- Remove demo seed data
-DO $$
-BEGIN
-  -- Remove payments linked to demo reservations first
-  DELETE FROM payments
-  WHERE reservation_id IN (
-    SELECT r.id
-    FROM reservations r
-    LEFT JOIN users u ON u.id = r.user_id
-    WHERE u.email IN ('admin@smartparking.rw', 'host@smartparking.rw')
-  );
+psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" <<'EOF'
+DELETE FROM payments
+WHERE reservation_id IN (
+  SELECT r.id FROM reservations r
+  JOIN users u ON u.id = r.user_id
+  WHERE u.email LIKE '%@smartparking.rw'
+     OR u.email LIKE '%@smartparking.com'
+     OR u.email LIKE '%@kigali.seed'
+);
 
-  -- Remove demo reservations
-  DELETE FROM reservations
-  WHERE user_id IN (
-    SELECT id FROM users WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw')
-  );
+DELETE FROM reservations r
+USING users u
+WHERE r.user_id = u.id
+  AND (u.email LIKE '%@smartparking.rw'
+    OR u.email LIKE '%@smartparking.com'
+    OR u.email LIKE '%@kigali.seed');
 
-  -- Remove demo users
-  DELETE FROM users
-  WHERE email IN ('admin@smartparking.rw', 'host@smartparking.rw', 'driver@smartparking.rw', 'host2@smartparking.rw');
+DELETE FROM parking_spaces
+WHERE name IN (
+  'BK Arena Parking',
+  'Kigali Convention Centre',
+  'Nyarugenge Market Parking',
+  'Remera Parking Zone',
+  'Kicukiro Commercial Parking',
+  'Kacyiru Parking',
+  'Kimironko Parking',
+  'Nyabugogo Parking',
+  'CBD Parking',
+  'Remera Parking'
+);
 
-  -- Remove demo parking spaces
-  DELETE FROM parking_spaces
-  WHERE name IN (
-    'BK Arena Parking',
-    'Kigali Convention Centre',
-    'Nyarugenge Market Parking',
-    'Remera Parking Zone',
-    'Kicukiro Commercial Parking',
-    'Kacyiru Parking',
-    'Kimironko Parking',
-    'Nyabugogo Parking',
-    'CBD Parking',
-    'Remera Parking'
-  );
-  
-  RAISE NOTICE 'Demo data removed successfully';
-END $$;
+DELETE FROM events
+WHERE name IN ('BK Arena Music Festival', 'BK Arena Concert');
 
--- Verify deletion
-SELECT COUNT(*) as total_users FROM users;
-SELECT COUNT(*) as total_parking_spaces FROM parking_spaces;
-SELECT COUNT(*) as total_reservations FROM reservations;
+DELETE FROM users
+WHERE email LIKE '%@smartparking.rw'
+   OR email LIKE '%@smartparking.com'
+   OR email LIKE '%@kigali.seed';
 
+SELECT COUNT(*) AS users_remaining FROM users;
+SELECT COUNT(*) AS parking_spaces_remaining FROM parking_spaces;
 EOF
 
 echo "Demo data removal completed."
