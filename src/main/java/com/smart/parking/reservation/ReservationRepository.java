@@ -46,10 +46,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByParkingSpaceId(Long parkingSpaceId);
 
     // New: Find reservations for dashboard analytics
-    @Query("SELECT COUNT(r) FROM Reservation r WHERE r.paid = true AND CAST(r.createdAt AS date) = CURRENT_DATE")
+    @Query(value = """
+            SELECT COUNT(*) FROM reservations
+            WHERE paid = true AND CAST(created_at AS DATE) = CURRENT_DATE
+            """, nativeQuery = true)
     Long countBookingsToday();
 
-    @Query("SELECT COALESCE(SUM(r.totalAmount), 0) FROM Reservation r WHERE r.paid = true AND CAST(r.createdAt AS date) = CURRENT_DATE")
+    @Query(value = """
+            SELECT COALESCE(SUM(total_amount), 0) FROM reservations
+            WHERE paid = true AND CAST(created_at AS DATE) = CURRENT_DATE
+            """, nativeQuery = true)
     java.math.BigDecimal revenueToday();
 
     @Query("""
