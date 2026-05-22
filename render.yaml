@@ -20,6 +20,6 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ALLOWED_ORIGINS
-        value: "http://localhost:5173,https://smart-parking-backend-2.onrender.com"
+        value: "http://localhost:5173,http://127.0.0.1:5173"
       - key: APP_REDIS_ENABLED
         value: "false"
