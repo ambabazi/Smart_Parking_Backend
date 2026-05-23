@@ -4,6 +4,7 @@ import com.smart.parking.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +29,20 @@ import org.springframework.web.bind.annotation.*;
 public class UssdController {
 
     private final NotificationService notificationService;
+
+    @Value("${app.ussd.service-codes:*384#,*385#,*386#}")
+    private String configuredServiceCodes;
+
+    @PostMapping(path = "/session", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+                 produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> handleUssdSession(
+            @RequestParam String sessionId,
+            @RequestParam String phoneNumber,
+            @RequestParam String serviceCode,
+            @RequestParam(defaultValue = "") String text) {
+        return handleUssd(sessionId, phoneNumber, serviceCode, text);
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
                  produces = MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> handleUssd(
@@ -37,6 +52,10 @@ public class UssdController {
             @RequestParam(defaultValue = "") String text) {
 
         log.info("USSD: session={} phone={} text={}", sessionId, phoneNumber, text);
+
+        if (!isAcceptedServiceCode(serviceCode)) {
+            return ResponseEntity.ok("END Invalid USSD service code. Please dial one of the configured short codes.");
+        }
 
         String response;
         String[] parts = text.split("\\*");
@@ -92,5 +111,17 @@ public class UssdController {
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("We couldn’t send the SMS right now. Please try again."));
         }
+    }
+
+    private boolean isAcceptedServiceCode(String serviceCode) {
+        if (serviceCode == null || serviceCode.isBlank()) {
+            return false;
+        }
+
+        String normalized = serviceCode.trim();
+        return java.util.Arrays.stream(configuredServiceCodes.split(","))
+                .map(String::trim)
+                .filter(code -> !code.isBlank())
+                .anyMatch(code -> code.equalsIgnoreCase(normalized));
     }
 }

@@ -28,8 +28,6 @@ app:
     enabled: ${APP_REDIS_ENABLED:false}
 
 jwt:
-  # Render: set JWT_SECRET in the dashboard (render.yaml can auto-generate it).
-  # Fallback is only for bootstrapping; replace before real production traffic.
-  secret: ${JWT_SECRET:SmartParkingRenderBootstrapSecretKeyMin32Chars!}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:900000}
   refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}

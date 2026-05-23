@@ -22,14 +22,11 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.reservation.parkingSpace.owner.id = :ownerId AND p.status = 'SUCCESS'")
     BigDecimal sumPaymentsByOwnerId(@Param("ownerId") Long ownerId);
 
-    @Query(value = """
-            SELECT COALESCE(SUM(p.amount), 0)
-            FROM payments p
-            JOIN reservations r ON r.id = p.reservation_id
-            JOIN parking_spaces ps ON ps.id = r.parking_space_id
-            WHERE ps.owner_id = :ownerId
-              AND p.status = 'SUCCESS'
-              AND CAST(r.created_at AS DATE) = CURRENT_DATE
-            """, nativeQuery = true)
+    @Query("""
+            SELECT COALESCE(SUM(p.amount), 0) FROM Payment p
+            WHERE p.reservation.parkingSpace.owner.id = :ownerId
+              AND UPPER(p.status) = 'SUCCESS'
+              AND CAST(p.reservation.createdAt AS date) = CURRENT_DATE
+            """)
     BigDecimal sumPaymentsByOwnerIdToday(@Param("ownerId") Long ownerId);
 }

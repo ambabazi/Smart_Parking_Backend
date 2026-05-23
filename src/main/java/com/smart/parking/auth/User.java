@@ -43,12 +43,37 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @Column(name = "notifications_enabled", nullable = false)
+    @Builder.Default
+    private Boolean notificationsEnabled = true;
+
+    @Column(name = "email_notifications_enabled", nullable = false)
+    @Builder.Default
+    private Boolean emailNotificationsEnabled = true;
+
+    @Column(name = "sms_notifications_enabled", nullable = false)
+    @Builder.Default
+    private Boolean smsNotificationsEnabled = true;
+
+    @Column(name = "preferred_language", nullable = false)
+    @Builder.Default
+    private String preferredLanguage = "en";
+
+    @Column(name = "reminder_minutes_before_end", nullable = false)
+    @Builder.Default
+    private Integer reminderMinutesBeforeEnd = 10;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.notificationsEnabled == null) this.notificationsEnabled = true;
+        if (this.emailNotificationsEnabled == null) this.emailNotificationsEnabled = true;
+        if (this.smsNotificationsEnabled == null) this.smsNotificationsEnabled = true;
+        if (this.preferredLanguage == null || this.preferredLanguage.isBlank()) this.preferredLanguage = "en";
+        if (this.reminderMinutesBeforeEnd == null) this.reminderMinutesBeforeEnd = 10;
     }
 
     @Override

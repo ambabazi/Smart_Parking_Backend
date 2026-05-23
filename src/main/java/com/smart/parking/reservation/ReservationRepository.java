@@ -29,7 +29,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         WHERE r.parkingSpace.owner.email = :ownerEmail 
         AND r.startTime <= CURRENT_TIMESTAMP 
         AND r.endTime >= CURRENT_TIMESTAMP
-        AND r.paid = true
+        ORDER BY r.startTime DESC
         """)
     Page<Reservation> findActiveByOwnerEmail(@Param("ownerEmail") String ownerEmail, Pageable pageable);
     @Query("""
@@ -37,7 +37,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         WHERE r.parkingSpace.owner.email = :ownerEmail 
         AND r.startTime <= CURRENT_TIMESTAMP 
         AND r.endTime >= CURRENT_TIMESTAMP
-        AND r.paid = true
+        ORDER BY r.startTime DESC
         """)
     List<Reservation> findActiveByOwnerEmail(@Param("ownerEmail") String ownerEmail);
 
@@ -69,7 +69,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Query("""
         SELECT COALESCE(SUM(r.slotCount), 0) FROM Reservation r
         WHERE r.parkingSpace.id = :parkingSpaceId
-        AND r.status IN ('ACTIVE', 'CONFIRMED', 'CHECKED_IN')
+        AND r.status IN ('ACTIVE', 'CHECKED_IN')
         AND r.startTime < :endTime
         AND r.endTime > :startTime
     """)

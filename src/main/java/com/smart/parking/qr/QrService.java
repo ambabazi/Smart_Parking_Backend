@@ -44,12 +44,23 @@ public class QrService {
      * Verifies QR content format.
      * Returns true if the content matches the expected pattern.
      */
-    public boolean verifyQrContent(String qrContent, Long expectedReservationId) {
+    public boolean verifyQrContent(String qrContent, String expectedReservationIdentifier) {
+        if (qrContent == null || expectedReservationIdentifier == null) {
+            return false;
+        }
         String[] parts = qrContent.split("\\|");
-        if (parts.length < 2) return false;
+        if (parts.length < 1) {
+            return false;
+        }
+        String token = parts[0].trim();
+        String expected = expectedReservationIdentifier.trim();
+        if (token.equalsIgnoreCase(expected)) {
+            return true;
+        }
         try {
-            long resId = Long.parseLong(parts[0]);
-            return resId == expectedReservationId;
+            long resId = Long.parseLong(token);
+            long expectedId = Long.parseLong(expected);
+            return resId == expectedId;
         } catch (NumberFormatException e) {
             return false;
         }

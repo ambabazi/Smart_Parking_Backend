@@ -69,6 +69,34 @@ public class EventService {
                 .map(e -> toResponse(e, e.getActivatedSpaces().size()));
     }
 
+    @Cacheable(cacheNames = "allEvents", key = "#pageable.pageNumber + ':' + #pageable.pageSize + ':' + #pageable.sort")
+    public Page<EventResponse> getAllEvents(Pageable pageable) {
+        return eventRepo.findAll(pageable).map(e -> toResponse(e, e.getActivatedSpaces().size()));
+    }
+
+    @CacheEvict(cacheNames = {"activeEvents", "allEvents", "parkingSpacesByEvent", "parkingSpacesNearby", "parkingSpaces"}, allEntries = true)
+    @Transactional
+    public EventResponse linkParkingSpaces(Long eventId, List<Long> parkingSpaceIds) {
+        Event event = eventRepo.findById(eventId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+
+        List<ParkingSpace> spaces = spaceRepo.findAllById(parkingSpaceIds);
+        if (spaces.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No parking spaces found for the supplied ids");
+        }
+
+        spaces.forEach(space -> {
+            space.setEventEnabled(true);
+            space.setCurrentEvent(event);
+        });
+        spaceRepo.saveAll(spaces);
+
+        event.setActivatedSpaces(spaces);
+        eventRepo.save(event);
+
+        return toResponse(event, spaces.size());
+    }
+
     // ── DELETE /events/{id}/deactivate ────────────────────────────
     @CacheEvict(cacheNames = {"activeEvents", "parkingSpacesByEvent", "parkingSpacesNearby", "parkingSpaces"}, allEntries = true)
     @Transactional
@@ -96,6 +124,14 @@ public class EventService {
                 event.getRadiusMetres(),
                 false
         ));
+    }
+
+    @CacheEvict(cacheNames = {"activeEvents", "allEvents", "parkingSpacesByEvent", "parkingSpacesNearby", "parkingSpaces"}, allEntries = true)
+    @Transactional
+    public ParkingSpace updateParkingSpaceEventMode(ParkingSpace space, Boolean eventEnabled, Event currentEvent) {
+        space.setEventEnabled(Boolean.TRUE.equals(eventEnabled));
+        space.setCurrentEvent(Boolean.TRUE.equals(eventEnabled) ? currentEvent : null);
+        return spaceRepo.save(space);
     }
 
     // ── used by scheduler ─────────────────────────────────────────

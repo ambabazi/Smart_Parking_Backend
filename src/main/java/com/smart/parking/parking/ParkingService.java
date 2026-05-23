@@ -2,6 +2,7 @@ package com.smart.parking.parking;
 
 import com.smart.parking.auth.User;
 import com.smart.parking.auth.UserRepository;
+import com.smart.parking.event.Event;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -157,6 +158,14 @@ public class ParkingService {
         }
 
         spaceRepo.delete(space);
+    }
+
+    @CacheEvict(cacheNames = {"parkingSpaces", "parkingSpacesNearby", "parkingSpacesByEvent", "parkingSpacesByOwner", "dashboardStats", "activeEvents", "allEvents"}, allEntries = true)
+    @Transactional
+    public ParkingSpace updateEventMode(ParkingSpace space, Boolean eventEnabled, Event currentEvent) {
+        space.setEventEnabled(Boolean.TRUE.equals(eventEnabled));
+        space.setCurrentEvent(Boolean.TRUE.equals(eventEnabled) ? currentEvent : null);
+        return spaceRepo.save(space);
     }
 
     private ParkingDTO toDTO(ParkingSpace p) {

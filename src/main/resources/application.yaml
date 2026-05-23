@@ -35,6 +35,10 @@ app:
     enabled: false
   frontend:
     url: ${APP_FRONTEND_URL:http://localhost:5173}
+  auth:
+    reset-token-ttl-minutes: ${RESET_TOKEN_TTL_MINUTES:30}
+  ussd:
+    service-codes: ${USSD_SERVICE_CODES:*384#,*385#,*386#}
   flutterwave:
     public:
       key: ${FLUTTERWAVE_PUBLIC_KEY:}

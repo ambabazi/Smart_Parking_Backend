@@ -16,6 +16,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -116,6 +118,28 @@ public class ParkingController {
         parkingService.deleteParkingSpace(id, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Parking space deleted"));
     }
+
+        @PatchMapping("/{identifier}/event-mode")
+        @PreAuthorize("hasAuthority('HOST') or hasAuthority('ADMIN')")
+        public ResponseEntity<ApiResponse<ParkingSpaceDetailDTO>> updateEventMode(
+                        @PathVariable String identifier,
+                        @Valid @RequestBody ParkingSpaceEventModeRequest request,
+                        Authentication authentication) {
+                ParkingSpace space = identifierResolver.resolveParkingSpace(identifier);
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(authority -> "ADMIN".equals(authority.getAuthority()));
+                if (!isAdmin && !space.getOwner().getEmail().equals(authentication.getName())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("You can only update your own parking spaces"));
+                }
+
+                Event event = null;
+                if (Boolean.TRUE.equals(request.getEventEnabled()) && request.getLinkedEventIdentifier() != null && !request.getLinkedEventIdentifier().isBlank()) {
+                        event = identifierResolver.resolveEvent(request.getLinkedEventIdentifier());
+                }
+
+                ParkingSpace updated = parkingService.updateEventMode(space, request.getEventEnabled(), event);
+                return ResponseEntity.ok(ApiResponse.success("Event mode updated", toDetailDTO(updated)));
+        }
 
     private ParkingSpaceDetailDTO toDetailDTO(ParkingSpace space) {
         return ParkingSpaceDetailDTO.builder()

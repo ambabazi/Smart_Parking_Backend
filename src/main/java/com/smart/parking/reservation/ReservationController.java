@@ -1,6 +1,7 @@
 package com.smart.parking.reservation;
 
 import com.smart.parking.common.ApiResponse;
+import com.smart.parking.common.DateTimeParseUtil;
 import com.smart.parking.common.EntityIdentifierResolver;
 import com.smart.parking.common.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -64,12 +65,18 @@ public class ReservationController {
             @RequestParam(defaultValue = "1") Integer slotCount
     ) {
         try {
-            java.time.LocalDateTime start = java.time.LocalDateTime.parse(startTime);
-            java.time.LocalDateTime end = java.time.LocalDateTime.parse(endTime);
+            java.time.LocalDateTime start = DateTimeParseUtil.parseFlexible(startTime);
+            java.time.LocalDateTime end = DateTimeParseUtil.parseFlexible(endTime);
             AvailabilityResponse res = reservationService.checkAvailability(parkingSpaceId, start, end, slotCount);
             return ResponseEntity.ok(ApiResponse.success("Availability", res));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Could not check availability right now."));
         }
     }
 

@@ -29,6 +29,50 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        return authService.resetPassword(request);
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserProfileDTO>> updateProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        return authService.updateProfile(authentication.getName(), request);
+    }
+
+    @PatchMapping("/me/password")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        return authService.changePassword(authentication.getName(), request);
+    }
+
+    @PatchMapping("/me/notifications")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<NotificationPreferencesDTO>> updateNotifications(
+            Authentication authentication,
+            @Valid @RequestBody UpdatePreferencesRequest request) {
+        return authService.updateNotifications(authentication.getName(), request);
+    }
+
+    @PatchMapping("/me/preferences")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<NotificationPreferencesDTO>> updatePreferences(
+            Authentication authentication,
+            @Valid @RequestBody UpdatePreferencesRequest request) {
+        return authService.updatePreferences(authentication.getName(), request);
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
             @Valid @RequestBody RefreshTokenRequest request) {

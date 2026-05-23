@@ -41,6 +41,23 @@ public class EventController {
                 .body(eventService.getActiveEvents(pageable));
     }
 
+    // GET /events — admin only
+    @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Page<EventResponse>> getAll(@PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(eventService.getAllEvents(pageable));
+    }
+
+    // POST /events/{id}/parking-spaces — admin only
+    @PostMapping("/{identifier}/parking-spaces")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public EventResponse linkParkingSpaces(
+            @PathVariable String identifier,
+            @Valid @RequestBody LinkParkingSpacesRequest req) {
+        Event event = identifierResolver.resolveEvent(identifier);
+        return eventService.linkParkingSpaces(event.getId(), req.getParkingSpaceIds());
+    }
+
     // DELETE /events/{id}/deactivate — admin only
     @DeleteMapping("/{identifier}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)

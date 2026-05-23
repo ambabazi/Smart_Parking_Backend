@@ -71,7 +71,9 @@ public class QrController {
 
             Reservation reservation = identifierResolver.resolveReservation(request.getReservationId());
 
-            boolean valid = qrService.verifyQrContent(request.getQrContent(), reservation.getId());
+            boolean valid = qrService.verifyQrContent(
+                    request.getQrContent(),
+                    String.valueOf(reservation.getId()));
             if (!valid) {
                 return ResponseEntity.ok(ApiResponse.success("INVALID", new QRVerificationResponse("INVALID", false, null, null, null)));
             }

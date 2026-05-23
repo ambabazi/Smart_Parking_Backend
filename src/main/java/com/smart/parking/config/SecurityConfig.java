@@ -49,6 +49,7 @@ public class SecurityConfig {
                     "/ping",
                     "/api/auth/**",
                     "/api/ussd",
+                    "/api/ussd/**",
                     "/api-docs",
                     "/api-docs/**",
                     "/swagger-ui.html",
