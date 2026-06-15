@@ -70,7 +70,11 @@ management:
 jwt:
   secret: ${JWT_SECRET:secret}
   expiration: ${JWT_EXPIRATION:900000}
-  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
+  # Refresh-token lifetime = the inactivity window. It is a SLIDING window because the
+  # token is rotated (re-issued with a fresh TTL) on every /api/auth/refresh, so each
+  # use resets the clock. 2 days (172800000 ms) => a user inactive for 2 days is logged
+  # out (their next refresh returns 401 and the app must send them to login).
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION:172800000}
 
 springdoc:
   api-docs:

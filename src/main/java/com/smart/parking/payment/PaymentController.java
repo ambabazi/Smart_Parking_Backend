@@ -63,6 +63,31 @@ public class PaymentController {
         }
     }
 
+    // Called by the frontend on the /payment/callback redirect to immediately
+    // confirm the payment with Flutterwave (instead of waiting for a status poll
+    // or a webhook that may never arrive).
+    @PostMapping("/verify/{reservationIdentifier}")
+    @PreAuthorize("hasAuthority('DRIVER')")
+    public ResponseEntity<?> verifyPayment(
+            @PathVariable String reservationIdentifier,
+            Authentication authentication) {
+        try {
+            Reservation reservation = identifierResolver.resolveReservation(reservationIdentifier);
+            if (!reservation.getUser().getEmail().equals(authentication.getName())) {
+                return ResponseEntity.status(403).build();
+            }
+            var status = paymentService.getPaymentStatus(reservation.getId());
+            boolean paid = status != null && "SUCCESS".equalsIgnoreCase(status.getStatus());
+            return ResponseEntity.ok(Map.of(
+                    "paid", paid,
+                    "status", status != null ? status.getStatus() : "PENDING",
+                    "reservationReferenceCode", reservation.getReferenceCode()
+            ));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/status/{reservationIdentifier}")
     @PreAuthorize("hasAuthority('DRIVER')")
     public ResponseEntity<?> getPaymentStatus(
