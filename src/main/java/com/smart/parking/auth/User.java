@@ -33,7 +33,8 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(unique = true, nullable = false)
+    // Nullable: Google (OAuth2) users sign up without a phone number.
+    @Column(unique = true)
     private String phone;
 
     @Column(nullable = false)
@@ -42,6 +43,11 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    // 'LOCAL' for email/password sign-ups, 'GOOGLE' for OAuth2 sign-ins.
+    @Column(name = "auth_provider")
+    @Builder.Default
+    private String authProvider = "LOCAL";
 
     @Column(name = "notifications_enabled", nullable = false)
     @Builder.Default

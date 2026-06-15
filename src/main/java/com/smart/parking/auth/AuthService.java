@@ -158,7 +158,8 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         String trimmedPhone = request.getPhone().trim();
-        if (!user.getPhone().equals(trimmedPhone) && userRepository.existsByPhone(trimmedPhone)) {
+        // user.getPhone() can be null for Google (OAuth2) accounts setting a phone for the first time.
+        if (!trimmedPhone.equals(user.getPhone()) && userRepository.existsByPhone(trimmedPhone)) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Phone number already registered"));
         }
 

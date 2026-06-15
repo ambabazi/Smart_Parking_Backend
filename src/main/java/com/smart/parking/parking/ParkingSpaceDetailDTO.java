@@ -20,6 +20,7 @@ public class ParkingSpaceDetailDTO {
     private Integer totalSlots;
     private Integer availableSlots;
     private Double pricePerSlot;
+    private String imageUrl;
     private Boolean eventEnabled;
     private Long ownerId;
     private String ownerName;

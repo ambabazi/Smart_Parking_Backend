@@ -31,4 +31,7 @@ public class ParkingSpaceCreateDTO {
     @NotNull(message = "Price per slot is required")
     @Positive(message = "Price per slot must be greater than 0")
     private Double pricePerSlot;
+
+    // Optional photo URL for the space.
+    private String imageUrl;
 }

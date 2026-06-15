@@ -121,6 +121,7 @@ public class ParkingService {
                 .totalSlots(dto.getTotalSlots())
                 .availableSlots(dto.getTotalSlots())
                 .pricePerSlot(dto.getPricePerSlot())
+                .imageUrl(dto.getImageUrl())
                 .eventEnabled(false)
                 .build();
 
@@ -143,6 +144,9 @@ public class ParkingService {
         space.setLongitude(dto.getLongitude());
         space.setTotalSlots(dto.getTotalSlots());
         space.setPricePerSlot(dto.getPricePerSlot());
+        if (dto.getImageUrl() != null) {
+            space.setImageUrl(dto.getImageUrl());
+        }
 
         return spaceRepo.save(space);
     }
@@ -180,6 +184,7 @@ public class ParkingService {
                 p.getTotalSlots(),
                 p.getAvailableSlots(),
                 p.getPricePerSlot(),
+                p.getImageUrl(),
                 p.getEventEnabled()
         );
     }

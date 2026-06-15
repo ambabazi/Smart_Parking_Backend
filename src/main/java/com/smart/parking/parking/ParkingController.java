@@ -153,6 +153,7 @@ public class ParkingController {
                 .totalSlots(space.getTotalSlots())
                 .availableSlots(space.getAvailableSlots())
                 .pricePerSlot(space.getPricePerSlot())
+                .imageUrl(space.getImageUrl())
                 .eventEnabled(space.getEventEnabled())
                 .ownerId(space.getOwner().getId())
                 .ownerName(space.getOwner().getFullName())

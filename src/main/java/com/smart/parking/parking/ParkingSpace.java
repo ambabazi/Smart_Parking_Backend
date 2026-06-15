@@ -56,6 +56,10 @@ public class ParkingSpace {
     @Column(nullable = false)
     private Double pricePerSlot;
 
+    // Optional photo for the space. Any URL: hosted image, CDN, or a frontend /public asset.
+    @Column(name = "image_url", length = 512)
+    private String imageUrl;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean eventEnabled = false;

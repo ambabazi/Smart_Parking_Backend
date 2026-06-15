@@ -14,5 +14,6 @@ public record ParkingDTO(
         Integer totalSlots,
         Integer availableSlots,
         Double pricePerSlot,
+        String imageUrl,
         Boolean eventEnabled
 ) {}
