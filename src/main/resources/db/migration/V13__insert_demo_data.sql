@@ -63,10 +63,12 @@ INSERT INTO users (full_name, email, phone, password, role) VALUES
  'HOST')
 ON CONFLICT DO NOTHING;
 
--- 5 real Kigali parking spaces
+-- 5 real Kigali parking spaces (uuid + reference_code required after V12)
 INSERT INTO parking_spaces
-  (owner_id, name, address, latitude, longitude, total_slots, available_slots, price_per_slot, event_enabled)
-SELECT u.id, v.name, v.address, v.lat, v.lng, v.slots, v.slots, v.price, FALSE
+  (owner_id, name, address, latitude, longitude, total_slots, available_slots, price_per_slot, event_enabled, uuid, reference_code)
+SELECT u.id, v.name, v.address, v.lat, v.lng, v.slots, v.slots, v.price, FALSE,
+       gen_random_uuid()::text,
+       'PKG-' || TO_CHAR(NOW(), 'YYYY-MM-DD') || '-' || LPAD(nextval('parking_spaces_seq')::text, 5, '0')
 FROM (
   VALUES
     ('BK Arena Parking', 'KG 11 Ave, Kigali', -1.9502, 30.0588, 80, 500.00),
