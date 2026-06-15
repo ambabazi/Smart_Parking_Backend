@@ -1,4 +1,18 @@
--- Seed one active event so Event Parking has live data on fresh deploys
+-- Seed one active event so Event Parking has live data on fresh deploys.
+-- 'venue' is a legacy V1 column (NOT NULL, no default) the Event entity no longer
+-- maps. On databases where V16 already applied before its venue fix existed, the
+-- constraint is still present, so drop it here (idempotent) before inserting and
+-- before the app performs entity inserts that omit venue.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'events' AND column_name = 'venue'
+  ) THEN
+    EXECUTE 'ALTER TABLE events ALTER COLUMN venue DROP NOT NULL';
+  END IF;
+END $$;
+
 INSERT INTO events (name, latitude, longitude, radius_metres, start_time, end_time, active, created_at)
 SELECT
     'BK Arena Music Festival',

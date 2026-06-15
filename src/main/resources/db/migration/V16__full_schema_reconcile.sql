@@ -28,6 +28,17 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS radius_metres DOUBLE PRECISION DEFAU
 -- V1 created this as radius_km DECIMAL(5,2); V9 only renamed it (type unchanged),
 -- so on existing DBs it is still DECIMAL(5,2) and cannot hold 1000. Widen it now.
 ALTER TABLE events ALTER COLUMN radius_metres TYPE DOUBLE PRECISION;
+-- 'venue' is a legacy V1 column (NOT NULL, no default) that the Event entity no
+-- longer maps. Drop the constraint so entity inserts and seed rows don't fail.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'events' AND column_name = 'venue'
+  ) THEN
+    EXECUTE 'ALTER TABLE events ALTER COLUMN venue DROP NOT NULL';
+  END IF;
+END $$;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS start_time TIMESTAMP;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time TIMESTAMP;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT TRUE;
