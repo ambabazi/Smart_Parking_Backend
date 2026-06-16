@@ -63,6 +63,7 @@ public class ReservationService {
                 .qrCode(qrToken)
                 .startTime(req.getStartTime())
                 .endTime(req.getEndTime())
+                .licensePlates(normalizeLicensePlates(req.getLicensePlates(), slotsRequested))
                 .paid(false)
                 .verified(false)
                 .build();
@@ -228,5 +229,24 @@ public class ReservationService {
                 r.getStatus(),
                 minutesRemaining
         );
+    }
+
+    private String normalizeLicensePlates(java.util.List<String> plates, int slotCount) {
+        if (plates == null || plates.isEmpty()) {
+            return null;
+        }
+        java.util.List<String> cleaned = plates.stream()
+                .map(p -> p == null ? "" : p.trim().toUpperCase())
+                .filter(p -> !p.isBlank())
+                .distinct()
+                .toList();
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        if (cleaned.size() > slotCount) {
+            throw new IllegalArgumentException(
+                    "Provide at most " + slotCount + " license plate(s) for " + slotCount + " slot(s)");
+        }
+        return String.join(",", cleaned);
     }
 }

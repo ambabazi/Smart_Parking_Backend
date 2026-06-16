@@ -46,6 +46,10 @@ public class Reservation {
     @Builder.Default
     private Integer slotCount = 1;
 
+    // Comma-separated plate numbers when booking multiple slots (e.g. RAB123A,RAB456B).
+    @Column(name = "license_plates", length = 500)
+    private String licensePlates;
+
     @Column(name = "start_time", nullable = false)
     private LocalDateTime startTime;
 

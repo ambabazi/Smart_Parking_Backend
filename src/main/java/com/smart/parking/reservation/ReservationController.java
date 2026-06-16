@@ -187,6 +187,7 @@ public class ReservationController {
                 .parkingSpaceReferenceCode(res.getParkingSpace().getReferenceCode())
                 .parkingSpaceName(res.getParkingSpace().getName())
                 .slotCount(res.getSlotCount())
+                .licensePlates(res.getLicensePlates())
                 .startTime(res.getStartTime())
                 .endTime(res.getEndTime())
                 .totalAmount(res.getTotalAmount())

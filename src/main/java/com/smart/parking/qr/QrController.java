@@ -104,7 +104,7 @@ public class QrController {
                     reservation.getId(), reservation.getStartTime(), reservation.getEndTime(), reservation.getParkingSpace().getName(), reservation.getTotalAmount()
             );
 
-            return ResponseEntity.ok(ApiResponse.success("VALID", new QRVerificationResponse("VALID", true, reservation.getUser().getFullName(), reservation.getUser().getPhone(), detail)));
+            return ResponseEntity.ok(ApiResponse.success("VALID", new QRVerificationResponse("VALID", true, reservation.getUser().getFullName(), reservation.getLicensePlates(), detail)));
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

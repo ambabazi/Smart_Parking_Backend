@@ -22,6 +22,7 @@ public class ReservationResponseDTO {
     private String parkingSpaceReferenceCode;
     private String parkingSpaceName;
     private Integer slotCount;
+    private String licensePlates;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private BigDecimal totalAmount;

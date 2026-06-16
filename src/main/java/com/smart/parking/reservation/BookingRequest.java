@@ -20,4 +20,7 @@ public class BookingRequest {
 
     @NotNull(message = "End time is required")
     private LocalDateTime endTime;
+
+    /** One plate per slot when booking multiple cars (e.g. ["RAB123A","RAB456B"]). */
+    private java.util.List<String> licensePlates;
 }
