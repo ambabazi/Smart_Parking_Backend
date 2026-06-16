@@ -3,6 +3,7 @@ package com.smart.parking.payment;
 import com.smart.parking.notification.NotificationService;
 import com.smart.parking.reservation.Reservation;
 import com.smart.parking.reservation.ReservationRepository;
+import com.smart.parking.reservation.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,8 +39,15 @@ public class PaymentService {
 
     // 1. Generate Payment Link
     public String initiatePayment(Reservation res) {
-        BigDecimal totalAmount = BigDecimal.valueOf(res.getParkingSpace().getPricePerSlot())
-                .multiply(BigDecimal.valueOf(res.getSlotCount()));
+        BigDecimal totalAmount = ReservationService.calculateBookingTotal(
+                res.getParkingSpace(),
+                res.getSlotCount(),
+                res.getStartTime(),
+                res.getEndTime());
+        if (res.getTotalAmount() == null || res.getTotalAmount().compareTo(totalAmount) != 0) {
+            res.setTotalAmount(totalAmount);
+            reservationRepository.save(res);
+        }
 
         Map<String, Object> payload = Map.of(
                 "tx_ref", "KP-" + res.getReferenceCode(),

@@ -52,8 +52,7 @@ public class ReservationService {
         spaceRepo.save(space);
 
         String qrToken = UUID.randomUUID().toString();
-        BigDecimal totalAmount = BigDecimal.valueOf(space.getPricePerSlot())
-            .multiply(BigDecimal.valueOf(slotsRequested));
+        BigDecimal totalAmount = calculateBookingTotal(space, slotsRequested, req.getStartTime(), req.getEndTime());
 
         Reservation res = Reservation.builder()
                 .user(user)
@@ -207,7 +206,8 @@ public class ReservationService {
         long hours = ChronoUnit.HOURS.between(startTime, endTime);
         if (hours == 0) hours = 1;
 
-        double estimatedPrice = space.getPricePerSlot() * hours * (requestedSlots == null ? 1 : requestedSlots);
+        double estimatedPrice = calculateBookingTotal(space, requestedSlots == null ? 1 : requestedSlots, startTime, endTime)
+                .doubleValue();
 
         return new AvailabilityResponse(isAvailable, available, estimatedPrice, space.getPricePerSlot(), hours);
     }
@@ -248,5 +248,20 @@ public class ReservationService {
                     "Provide at most " + slotCount + " license plate(s) for " + slotCount + " slot(s)");
         }
         return String.join(",", cleaned);
+    }
+
+    /**
+     * Total = slots × pricePerSlot × duration (hours), minimum 15 minutes billed.
+     * Matches the ParkShare frontend estimate so Flutterwave charges the same amount.
+     */
+    static BigDecimal calculateBookingTotal(ParkingSpace space, int slotCount,
+                                            LocalDateTime start, LocalDateTime end) {
+        long minutes = ChronoUnit.MINUTES.between(start, end);
+        if (minutes <= 0) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+        double hours = Math.max(0.25, minutes / 60.0);
+        double raw = space.getPricePerSlot() * slotCount * hours;
+        return BigDecimal.valueOf(Math.round(raw));
     }
 }
